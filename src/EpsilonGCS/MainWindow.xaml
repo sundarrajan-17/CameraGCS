@@ -1,0 +1,455 @@
+<Window x:Class="EpsilonGCS.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:EpsilonGCS.Controls"
+        xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
+        Title="Epsilon GCS" Width="1366" Height="768" MinWidth="1024" MinHeight="640"
+        Background="{StaticResource WindowBg}" FontFamily="Segoe UI" FontSize="12"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Close" Executed="ClosePanel_Executed" CanExecute="ClosePanel_CanExecute" />
+    </Window.CommandBindings>
+
+    <DockPanel>
+        <!-- ======================= MENU ======================= -->
+        <Menu x:Name="MainMenu" DockPanel.Dock="Top" Background="White" Padding="2,1">
+            <MenuItem Header="_Window">
+                <MenuItem x:Name="MenuConnect" Header="_Connect" Click="MenuConnect_Click" />
+                <MenuItem Header="Connection settings..." Click="MenuOpenPage_Click" Tag="Network" />
+                <Separator />
+                <MenuItem Header="Restart _video" Click="MenuRestartVideo_Click" />
+                <MenuItem Header="_Fullscreen video" InputGestureText="F11" Click="MenuFullscreen_Click" />
+                <MenuItem Header="Video _player..." Click="MenuOpenPage_Click" Tag="Player" />
+                <MenuItem Header="Save video _frame to PC" Click="MenuLocalSnapshot_Click" />
+                <MenuItem Header="RTSP _restream..." Click="MenuOpenPage_Click" Tag="Restream" />
+                <Separator />
+                <MenuItem x:Name="MenuMti" Header="MTI panel" IsCheckable="True" IsChecked="True" Click="MenuPanel_Click" Tag="MtiPanel" />
+                <MenuItem x:Name="MenuEnhancement" Header="Enhancement panel" IsCheckable="True" IsChecked="True" Click="MenuPanel_Click" Tag="EnhancementPanel" />
+                <MenuItem x:Name="MenuControls" Header="Controls panel" IsCheckable="True" IsChecked="True" Click="MenuPanel_Click" Tag="ControlsPanel" />
+                <MenuItem x:Name="MenuMap" Header="Geo map" IsCheckable="True" IsChecked="True" Click="MenuMap_Click" />
+                <Separator />
+                <MenuItem Header="_Telemetry" Click="MenuOpenPage_Click" Tag="Telemetry" />
+                <MenuItem Header="_Errors..." Click="MenuErrors_Click" />
+                <MenuItem Header="_Diagnostic..." Click="MenuDiagnostic_Click" />
+                <MenuItem Header="_Log..." Click="MenuLog_Click" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="MenuExit_Click" />
+            </MenuItem>
+            <MenuItem Header="_Settings">
+                <MenuItem Header="_Sensors" Click="MenuOpenPage_Click" Tag="Sensors" />
+                <MenuItem Header="_Network" Click="MenuOpenPage_Click" Tag="Network" />
+                <MenuItem Header="_Common" Click="MenuOpenPage_Click" Tag="Common" />
+                <MenuItem Header="_Video settings" Click="MenuOpenPage_Click" Tag="Video" />
+                <MenuItem Header="_Processing" Click="MenuOpenPage_Click" Tag="Processing" />
+                <MenuItem Header="_Geo / LRF" Click="MenuOpenPage_Click" Tag="Geo" />
+                <MenuItem Header="_Key bindings" Click="MenuOpenPage_Click" Tag="Keys" />
+                <MenuItem Header="RTSP _restream" Click="MenuOpenPage_Click" Tag="Restream" />
+                <Separator />
+                <MenuItem Header="Open settings folder" Click="MenuSettingsFolder_Click" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Device info..." Click="MenuDeviceInfo_Click" />
+                <MenuItem Header="_Key bindings" Click="MenuOpenPage_Click" Tag="Keys" />
+                <Separator />
+                <MenuItem Header="_About" Click="MenuAbout_Click" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ======================= STATUS BAR ======================= -->
+        <Border x:Name="StatusBarBorder" DockPanel.Dock="Bottom" Height="22" Background="{StaticResource WindowBg}" BorderBrush="#D0D0D0" BorderThickness="0,1,0,0">
+            <DockPanel LastChildFill="True" Margin="4,0">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" TextBlock.FontSize="11.5">
+                    <TextBlock Text="Status:" VerticalAlignment="Center" />
+                    <Border x:Name="BadgeLink" Style="{StaticResource Badge}">
+                        <TextBlock x:Name="BadgeLinkText" Text="Disconnected" />
+                    </Border>
+                    <TextBlock Text="|" VerticalAlignment="Center" Margin="2,0" />
+                    <TextBlock Text="VP Init:" VerticalAlignment="Center" Margin="2,0,0,0" />
+                    <Border x:Name="BadgeVp" Style="{StaticResource Badge}" Background="#D8D8D8">
+                        <TextBlock x:Name="BadgeVpText" Text="-" />
+                    </Border>
+                    <TextBlock Text="|" VerticalAlignment="Center" Margin="2,0" />
+                    <Border x:Name="BadgeGps" Style="{StaticResource Badge}" Background="#D8D8D8">
+                        <TextBlock Text="GPS" />
+                    </Border>
+                    <Border x:Name="BadgeRec" Style="{StaticResource Badge}" Visibility="Collapsed" Margin="10,0,2,0">
+                        <TextBlock Text="● REC" Foreground="White" />
+                    </Border>
+                    <Border x:Name="BadgeError" Style="{StaticResource Badge}" Background="{StaticResource WarnYellow}" Visibility="Collapsed"
+                            Margin="10,0,2,0" Cursor="Hand" MouseLeftButtonUp="BadgeError_Click" ToolTip="Gimbal reports an error - click for details">
+                        <TextBlock Text="⚠ Error" />
+                    </Border>
+                    <Border x:Name="BadgeSim" Style="{StaticResource Badge}" Background="#FF9F1C" Visibility="Collapsed" Margin="10,0,2,0"
+                            ToolTip="Connected to the bundled simulator - telemetry and video are SIMULATED, not from a real gimbal">
+                        <TextBlock Text="SIMULATOR - simulated data" FontWeight="SemiBold" />
+                    </Border>
+                </StackPanel>
+                <TextBlock x:Name="StatusRight" DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="11" Foreground="#505050" />
+                <TextBlock x:Name="StatusMiddle" VerticalAlignment="Center" FontSize="11" Margin="12,0" Foreground="#303030" />
+            </DockPanel>
+        </Border>
+
+        <!-- ======================= BODY ======================= -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="76" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="26" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left rail -->
+            <ScrollViewer x:Name="RailScroll" Grid.Column="0" VerticalScrollBarVisibility="Hidden" Background="{StaticResource WindowBg}">
+                <StackPanel Margin="0,4,0,4">
+                    <c:RailButton x:Name="BtnRate" Content="RATE" Tag="1" Click="ModeButton_Click" ToolTip="Rate mode (1 / Esc)" />
+                    <c:RailButton x:Name="BtnAid" Content="AID" Tag="2" Click="ModeButton_Click" ToolTip="Rate aid mode (2)" />
+                    <c:RailButton x:Name="BtnScn" Content="SCN" Tag="5" Click="ModeButton_Click" ToolTip="Tracking scene (3)" />
+                    <c:RailButton x:Name="BtnVhcl" Content="VHCL" Tag="4" Click="ModeButton_Click" ToolTip="Tracking vehicle (4)" />
+                    <c:RailButton x:Name="BtnGeo" Content="GEO" Tag="7" Click="ModeButton_Click" ToolTip="Geo lock (5)" />
+                    <c:RailButton x:Name="BtnPilot" Content="PILOT" Tag="9" Click="ModeButton_Click" ToolTip="Pilot view (6)" />
+                    <c:RailButton x:Name="BtnStow" Content="STOW" Tag="8" Click="ModeButton_Click" ToolTip="Stow (7)" />
+                    <Line Style="{StaticResource RailSeparator}" />
+                    <c:RailButton x:Name="BtnStab" Content="STAB" Click="BtnStab_Click" ToolTip="Video stabilization" />
+                    <c:RailButton x:Name="BtnStabTrack" Height="34" Click="BtnStabTrack_Click" ToolTip="Stabilize on track">
+                        <TextBlock Text="Stab On Track" TextWrapping="Wrap" TextAlignment="Center" />
+                    </c:RailButton>
+                    <c:RailButton x:Name="BtnRoll" Content="ROLL" Click="BtnRoll_Click" ToolTip="Roll horizon alignment" />
+                    <c:RailButton x:Name="BtnAf" Content="AF" Click="BtnAf_Click" ToolTip="Auto focus (green) / manual focus" />
+                    <c:RailButton x:Name="BtnSf" Content="SF" Click="BtnSf_Click" ToolTip="Single (one-shot) auto focus" />
+                    <c:RailButton x:Name="BtnInfo" Content="INFO" Click="BtnInfo_Click" ToolTip="On-screen information" />
+                    <Line Style="{StaticResource RailSeparator}" />
+                    <c:RailButton x:Name="BtnIr" Content="IR" Click="BtnIr_Click" ToolTip="IR camera (I toggles)" />
+                    <c:RailButton x:Name="BtnEo" Content="EO" Click="BtnEo_Click" ToolTip="EO camera (I toggles)" />
+                    <Line Style="{StaticResource RailSeparator}" />
+                    <c:RailButton x:Name="BtnRec" Content="REC" Click="BtnRec_Click" ToolTip="Record to gimbal SD card (R)" />
+                    <c:RailButton x:Name="BtnSnap" Content="SNAP" Click="BtnSnap_Click" ToolTip="Snapshot to gimbal SD card (S)" />
+                    <Line Style="{StaticResource RailSeparator}" />
+                    <c:RailButton x:Name="BtnPip" Content="PIP" Click="BtnPip_Click" ToolTip="Picture in picture" />
+                    <c:RailButton x:Name="BtnTrack" Content="Track" Click="BtnTrack_Click" ToolTip="Click on the video to start tracking there" />
+                    <Line Style="{StaticResource RailSeparator}" />
+                    <c:RailButton x:Name="BtnLsr" Content="LSR" Click="BtnLsr_Click" ToolTip="Laser pointer" />
+                    <Line Style="{StaticResource RailSeparator}" />
+                    <c:RailButton x:Name="BtnSpeed" Content="SPEED" Click="BtnSpeed_Click" ToolTip="Cycle control speed 25 / 50 / 100 %" />
+                    <c:RailButton x:Name="BtnNudge" Content="NUDGE" Click="BtnNudge_Click" ToolTip="Arrow keys / pad move the track box" />
+                    <c:RailButton x:Name="BtnJoy" Content="J.STICK" Click="BtnJoy_Click" ToolTip="Use an XInput (Xbox) gamepad" />
+                    <c:RailButton x:Name="BtnNuc" Content="NUC" Click="BtnNuc_Click" ToolTip="IR non-uniformity correction / FFC (N)" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Centre: video + map, docked panels below -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition x:Name="BottomRow" Height="158" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="320" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition x:Name="MapColumn" Width="440" MinWidth="0" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ===== Video ===== -->
+                    <DockPanel Grid.Column="0" Margin="2,2,0,0">
+                        <Border DockPanel.Dock="Top" Style="{StaticResource DocTab}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Video" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border DockPanel.Dock="Bottom" Height="62" Background="White" BorderBrush="#D0D0D0" BorderThickness="1,0,1,1">
+                            <Grid Margin="6,3,6,3">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <DockPanel Grid.Row="0">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource PanelButton}" MinWidth="42" Width="42" Height="34" Padding="0"
+                                            Margin="6,0,0,0" Click="BtnLive_Click" ToolTip="Back to the live gimbal video">
+                                        <StackPanel>
+                                            <Path Data="M0,0 L7,4.5 L0,9 Z" Fill="#606060" HorizontalAlignment="Center" />
+                                            <TextBlock Text="LIVE" FontSize="9" HorizontalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnPlayPause" DockPanel.Dock="Left" Style="{StaticResource PadButton}" Width="26" FontSize="12"
+                                            Content="❚❚" Visibility="Collapsed" Click="BtnPlayPause_Click" ToolTip="Play / pause recording" />
+                                    <TextBlock x:Name="PlaybackTimeText" DockPanel.Dock="Right" FontSize="11" Foreground="#505050"
+                                               VerticalAlignment="Center" Margin="6,0,0,0" />
+                                    <Slider x:Name="VideoTimeline" Minimum="0" Maximum="1000" Value="1000" VerticalAlignment="Center"
+                                            Focusable="False" IsMoveToPointEnabled="True" IsEnabled="False"
+                                            PreviewMouseLeftButtonDown="VideoTimeline_MouseDown" PreviewMouseLeftButtonUp="VideoTimeline_MouseUp"
+                                            ToolTip="Recording position (live video stays at the end)" />
+                                </DockPanel>
+                                <DockPanel Grid.Row="1">
+                                    <TextBlock x:Name="VideoRestreamText" DockPanel.Dock="Right" FontSize="11" Foreground="#505050" VerticalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" TextBlock.FontSize="11.5">
+                                        <TextBlock Text="Status:" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="VideoStatusText" Text="Stopped" Foreground="{StaticResource LinkBlue}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Klv Packets" Foreground="#707070" Margin="24,0,0,0" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="KlvPacketsText" Text="0" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="VideoStatsText" Foreground="#707070" Margin="24,0,0,0" VerticalAlignment="Center" FontSize="11" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Grid>
+                        </Border>
+                        <Border Background="Black" BorderBrush="#D0D0D0" BorderThickness="1">
+                            <vlc:VideoView x:Name="VideoView" Background="Black">
+                                <Grid x:Name="VideoOverlay" Background="#01000000"
+                                      MouseLeftButtonDown="VideoOverlay_MouseLeftButtonDown"
+                                      MouseWheel="VideoOverlay_MouseWheel"
+                                      MouseMove="VideoOverlay_MouseMove"
+                                      MouseLeave="VideoOverlay_MouseLeave">
+                                    <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False">
+                                        <Rectangle x:Name="TrackHint" Width="64" Height="64" Stroke="#7CFC00" StrokeThickness="1.5"
+                                                   StrokeDashArray="4 3" Visibility="Collapsed" />
+                                    </Canvas>
+                                    <TextBlock x:Name="NoVideoText" Text="NO VIDEO" Foreground="#909090" FontSize="22" FontWeight="SemiBold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                                    <TextBlock x:Name="TrackModeText" Text="CLICK TO TRACK" Foreground="#7CFC00" FontSize="12" FontWeight="Bold"
+                                               HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="8" Visibility="Collapsed"
+                                               IsHitTestVisible="False" />
+                                </Grid>
+                            </vlc:VideoView>
+                        </Border>
+                    </DockPanel>
+
+                    <GridSplitter x:Name="MapSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{StaticResource WindowBg}" />
+
+                    <!-- ===== Geo map ===== -->
+                    <DockPanel x:Name="MapPane" Grid.Column="2" Margin="0,2,2,0">
+                        <Border DockPanel.Dock="Top" Style="{StaticResource DocTab}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Geo Map" Foreground="White" VerticalAlignment="Center" />
+                                <TextBlock Text="  ✕" Foreground="White" FontSize="10" VerticalAlignment="Center" Opacity="0.8"
+                                           Cursor="Hand" MouseLeftButtonUp="CloseMap_Click" />
+                            </StackPanel>
+                        </Border>
+                        <Border DockPanel.Dock="Top" Background="White" BorderBrush="#D0D0D0" BorderThickness="1,0,1,0">
+                            <WrapPanel Margin="2,1">
+                                <Button x:Name="MapFollowButton" Style="{StaticResource MapToolButton}" Click="MapFollow_Click"
+                                        ToolTip="Center on gimbal / follow gimbal (highlighted while following)">
+                                    <Path Data="M12,1 L21,23 L12,17.5 L3,23 Z" Fill="#0F2A5C" />
+                                </Button>
+                                <Button Style="{StaticResource MapToolButton}" Click="MapTarget_Click" ToolTip="Center on geo target">
+                                    <Path Data="M12,2 V8 M12,16 V22 M2,12 H8 M16,12 H22" Stroke="#E02020" StrokeThickness="2.2" />
+                                </Button>
+                                <Button Style="{StaticResource MapToolButton}" Click="MapZoomIn_Click" ToolTip="Zoom in">
+                                    <Path Data="M3,10 A7,7 0 1 0 17,10 A7,7 0 1 0 3,10 Z M15.2,15.2 L21,21 M6.5,10 H13.5 M10,6.5 V13.5"
+                                          Stroke="#303030" StrokeThickness="1.8" />
+                                </Button>
+                                <Button Style="{StaticResource MapToolButton}" Click="MapZoomOut_Click" ToolTip="Zoom out">
+                                    <Path Data="M3,10 A7,7 0 1 0 17,10 A7,7 0 1 0 3,10 Z M15.2,15.2 L21,21 M6.5,10 H13.5"
+                                          Stroke="#303030" StrokeThickness="1.8" />
+                                </Button>
+                                <Button x:Name="MapLayersButton" Style="{StaticResource MapToolButton}" Click="MapLayers_Click" ToolTip="Map layers">
+                                    <Grid>
+                                        <Path Data="M2,14 L12,20 L22,14" Stroke="#303030" StrokeThickness="1.8" />
+                                        <Path Data="M12,3 L22,9.5 L12,16 L2,9.5 Z" Fill="#E2571E" Stroke="#303030" StrokeThickness="1.2" />
+                                    </Grid>
+                                </Button>
+                                <Button x:Name="MapPoiButton" Style="{StaticResource MapToolButton}" Click="MapPoi_Click"
+                                        ToolTip="POI tool: click the map to place points (right-click map to clear)">
+                                    <Path Data="M12,23 C12,23 4.5,14 4.5,8.5 A7.5,7.5 0 1 1 19.5,8.5 C19.5,14 12,23 12,23 Z M12,5.5 A3,3 0 1 0 12.01,5.5 Z"
+                                          Fill="#F08A24" Stroke="#8A4300" StrokeThickness="1" />
+                                </Button>
+                                <Button x:Name="MapRulerButton" Style="{StaticResource MapToolButton}" Click="MapRuler_Click"
+                                        ToolTip="Ruler: click two points to measure distance and bearing">
+                                    <Path Data="M2,17 L17,2 L22,7 L7,22 Z M5.5,13.5 L8,16 M8.5,10.5 L10.5,12.5 M11.5,7.5 L14,10 M14.5,4.5 L16.5,6.5"
+                                          Fill="#FBE2CC" Stroke="#E07020" StrokeThickness="1.4" />
+                                </Button>
+                                <Button x:Name="MapPanButton" Style="{StaticResource MapToolButton}" Click="MapPan_Click" ToolTip="Pan (drag the map)">
+                                    <Path Data="M12,1 L16,6 H13.5 V10.5 H18 V8 L23,12 L18,16 V13.5 H13.5 V18 H16 L12,23 L8,18 H10.5 V13.5 H6 V16 L1,12 L6,8 V10.5 H10.5 V6 H8 Z"
+                                          Fill="#0F2A5C" />
+                                </Button>
+                            </WrapPanel>
+                        </Border>
+                        <Border DockPanel.Dock="Bottom" Height="22" Background="White" BorderBrush="#D0D0D0" BorderThickness="1,0,1,1">
+                            <TextBlock x:Name="MapCursorText" FontSize="11" VerticalAlignment="Center" Margin="6,0" Foreground="#303030" />
+                        </Border>
+                        <Grid>
+                            <Border BorderBrush="#D0D0D0" BorderThickness="1">
+                                <c:MapControl x:Name="Map" />
+                            </Border>
+                            <!-- Flyout pages opened from the side tabs -->
+                            <Border x:Name="FlyoutHost" Visibility="Collapsed" HorizontalAlignment="Right" Width="390"
+                                    Background="White" BorderBrush="{StaticResource AccentBlue}" BorderThickness="1,1,0,1">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.35" />
+                                </Border.Effect>
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Top" Background="{StaticResource AccentBlue}" Height="24">
+                                        <DockPanel Margin="8,0,2,0">
+                                            <Button DockPanel.Dock="Right" Content="✕" Width="22" Background="Transparent" Foreground="White"
+                                                    BorderThickness="0" Focusable="False" Click="CloseFlyout_Click" />
+                                            <TextBlock x:Name="FlyoutTitle" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </Border>
+                                    <ContentControl x:Name="FlyoutContent" />
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+                    </DockPanel>
+                </Grid>
+
+                <!-- ===== Bottom docked panels ===== -->
+                <Grid Grid.Row="1" x:Name="BottomPanels">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="MtiColumn" Width="1*" />
+                        <ColumnDefinition x:Name="EnhancementColumn" Width="1.7*" />
+                        <ColumnDefinition x:Name="ControlsColumn" Width="230" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- MTI -->
+                    <HeaderedContentControl x:Name="MtiPanel" Grid.Column="0" Header="MTI" Style="{StaticResource ToolPanel}">
+                        <StackPanel>
+                            <WrapPanel>
+                                <Button x:Name="BtnMtiEnable" Content="Enable" Style="{StaticResource PanelButton}" MinWidth="64" Click="BtnMtiEnable_Click" />
+                                <Button Content="SHIFT" Style="{StaticResource PanelButton}" MinWidth="52" Click="BtnMtiShift_Click" ToolTip="Shift selected MTI track" />
+                                <Button Content="DSGN" Style="{StaticResource PanelButton}" MinWidth="52" Click="BtnMtiDesignate_Click" ToolTip="Designate selected MTI track" />
+                                <Button Content="RESET" Style="{StaticResource PanelButton}" MinWidth="52" Click="BtnMtiReset_Click" ToolTip="Reset MTI tracks" />
+                            </WrapPanel>
+                            <DockPanel Margin="3,4,3,0">
+                                <TextBlock Text="Mode" Width="76" VerticalAlignment="Center" />
+                                <ComboBox x:Name="MtiMode" SelectedIndex="0" Height="22">
+                                    <ComboBoxItem Content="Vehicle (baseline)" Tag="1" />
+                                    <ComboBoxItem Content="Staring" Tag="2" />
+                                    <ComboBoxItem Content="Aerial (advanced)" Tag="3" />
+                                    <ComboBoxItem Content="Anomaly" Tag="4" />
+                                    <ComboBoxItem Content="Maritime" Tag="5" />
+                                </ComboBox>
+                            </DockPanel>
+                            <TextBlock Text="Sensitivity" Margin="3,6,3,0" />
+                            <DockPanel Margin="3,0">
+                                <TextBlock DockPanel.Dock="Left" Text="Low" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                <TextBlock DockPanel.Dock="Right" Text="High" FontSize="11" VerticalAlignment="Center" Margin="4,0,0,0" />
+                                <Slider x:Name="MtiSensitivity" Minimum="1" Maximum="10" Value="6" IsSnapToTickEnabled="True" TickFrequency="1"
+                                        TickPlacement="BottomRight" Focusable="False" ValueChanged="MtiSensitivity_ValueChanged" />
+                            </DockPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!-- Enhancement -->
+                    <HeaderedContentControl x:Name="EnhancementPanel" Grid.Column="1" Header="Enhancement" Style="{StaticResource ToolPanel}">
+                        <Grid Margin="6,0,6,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="30" />
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="62" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="30" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Active Camera:" VerticalAlignment="Center" />
+                                <TextBlock x:Name="EnhCameraText" Text="-" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="BtnEnhFilter" Content="NONE" Style="{StaticResource PanelButton}" Click="BtnEnhFilter_Click"
+                                        ToolTip="Filter: NONE / CLAHE / LAP (click to change)" />
+                                <Button Content="RESET" Style="{StaticResource PanelButton}" Click="BtnEnhReset_Click" ToolTip="Restore default enhancement values" />
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Sharpening" VerticalAlignment="Center" />
+                            <Slider Grid.Row="1" Grid.Column="1" x:Name="EnhSharpening" Minimum="0" Maximum="15" Value="0" Focusable="False"
+                                    VerticalAlignment="Center" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Enhancement_ValueChanged" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Value, ElementName=EnhSharpening, StringFormat={}{0:0}}"
+                                       VerticalAlignment="Center" TextAlignment="Right" />
+                            <TextBlock Grid.Row="1" Grid.Column="4" Text="Strength" VerticalAlignment="Center" />
+                            <Slider Grid.Row="1" Grid.Column="5" x:Name="EnhStrength" Minimum="0" Maximum="127" Value="0" Focusable="False"
+                                    VerticalAlignment="Center" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Enhancement_ValueChanged" />
+                            <TextBlock Grid.Row="1" Grid.Column="6" Text="{Binding Value, ElementName=EnhStrength, StringFormat={}{0:0}}"
+                                       VerticalAlignment="Center" TextAlignment="Right" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Denoise (Averaging)" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <Slider Grid.Row="2" Grid.Column="1" x:Name="EnhDenoise" Minimum="0" Maximum="255" Value="0" Focusable="False"
+                                    VerticalAlignment="Center" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Enhancement_ValueChanged" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Value, ElementName=EnhDenoise, StringFormat={}{0:0}}"
+                                       VerticalAlignment="Center" TextAlignment="Right" />
+                            <TextBlock Grid.Row="2" Grid.Column="4" Text="Blend" VerticalAlignment="Center" />
+                            <Slider Grid.Row="2" Grid.Column="5" x:Name="EnhBlend" Minimum="0" Maximum="255" Value="0" Focusable="False"
+                                    VerticalAlignment="Center" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="Enhancement_ValueChanged" />
+                            <TextBlock Grid.Row="2" Grid.Column="6" Text="{Binding Value, ElementName=EnhBlend, StringFormat={}{0:0}}"
+                                       VerticalAlignment="Center" TextAlignment="Right" />
+                        </Grid>
+                    </HeaderedContentControl>
+
+                    <!-- Controls -->
+                    <HeaderedContentControl x:Name="ControlsPanel" Grid.Column="2" Header="Controls" Style="{StaticResource ToolPanel}">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Bottom" Margin="2,2,2,0">
+                                <TextBlock Text="Speed" FontSize="11" VerticalAlignment="Center" Width="38" />
+                                <TextBlock x:Name="SpeedText" DockPanel.Dock="Right" Text="50%" FontSize="11" Width="32" TextAlignment="Right" VerticalAlignment="Center" />
+                                <Slider x:Name="SpeedSlider" Minimum="5" Maximum="100" Value="50" Focusable="False" VerticalAlignment="Center"
+                                        ValueChanged="SpeedSlider_ValueChanged" />
+                            </DockPanel>
+                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Button Grid.Row="0" Grid.Column="0" Content="Z−" FontWeight="Bold" FontSize="17" Tag="zoom-" Style="{StaticResource PadButton}" ToolTip="Zoom out (Z)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost" />
+                                <Button Grid.Row="0" Grid.Column="2" Tag="up" Style="{StaticResource PadButton}" ToolTip="Tilt up (↑)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost">
+                                    <Path Data="M2,10 L10,2 L18,10" Stroke="#202020" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="20" Height="11" Stretch="Uniform" />
+                                </Button>
+                                <Button Grid.Row="0" Grid.Column="4" Content="Z+" FontWeight="Bold" FontSize="17" Tag="zoom+" Style="{StaticResource PadButton}" ToolTip="Zoom in (X)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost" />
+                                <Button Grid.Row="1" Grid.Column="1" Tag="left" Style="{StaticResource PadButton}" ToolTip="Pan left (←)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost">
+                                    <Path Data="M10,2 L2,10 L10,18" Stroke="#202020" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="11" Height="20" Stretch="Uniform" />
+                                </Button>
+                                <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource PadButton}" Click="PadCenter_Click"
+                                        ToolTip="Center the gimbal: pilot view direction (C)">
+                                    <Ellipse Width="10" Height="10" Fill="#808080" />
+                                </Button>
+                                <Button Grid.Row="1" Grid.Column="3" Tag="right" Style="{StaticResource PadButton}" ToolTip="Pan right (→)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost">
+                                    <Path Data="M2,2 L10,10 L2,18" Stroke="#202020" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="11" Height="20" Stretch="Uniform" />
+                                </Button>
+                                <Button Grid.Row="2" Grid.Column="0" Content="F−" FontWeight="Bold" FontSize="17" Tag="focus-" Style="{StaticResource PadButton}" ToolTip="Focus (F)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost" />
+                                <Button Grid.Row="2" Grid.Column="2" Tag="down" Style="{StaticResource PadButton}" ToolTip="Tilt down (↓)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost">
+                                    <Path Data="M2,2 L10,10 L18,2" Stroke="#202020" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="20" Height="11" Stretch="Uniform" />
+                                </Button>
+                                <Button Grid.Row="2" Grid.Column="4" Content="F+" FontWeight="Bold" FontSize="17" Tag="focus+" Style="{StaticResource PadButton}" ToolTip="Focus (G)"
+                                        PreviewMouseLeftButtonDown="Pad_Down" PreviewMouseLeftButtonUp="Pad_Up" LostMouseCapture="Pad_Lost" />
+                            </Grid>
+                        </DockPanel>
+                    </HeaderedContentControl>
+                </Grid>
+            </Grid>
+
+            <!-- Right vertical tabs -->
+            <ScrollViewer x:Name="SideTabsScroll" Grid.Column="2" VerticalScrollBarVisibility="Hidden" Background="{StaticResource WindowBg}">
+                <StackPanel x:Name="SideTabs" Margin="2,4,0,0">
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Sensors" Tag="Sensors" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Telemetry" Tag="Telemetry" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Network" Tag="Network" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Common" Tag="Common" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Key Bindings" Tag="Keys" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Video Settings" Tag="Video" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Processing" Tag="Processing" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Video Player" Tag="Player" Click="SideTab_Click" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Restream" Tag="Restream" Click="SideTab_Click"
+                                  ToolTip="RTSP restream of the gimbal video" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>

@@ -1,0 +1,237 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:c="clr-namespace:EpsilonGCS.Controls">
+
+    <!-- Palette taken from the reference recording -->
+    <SolidColorBrush x:Key="WindowBg" Color="#F0F0F0" />
+    <SolidColorBrush x:Key="PanelBg" Color="#F5F5F5" />
+    <SolidColorBrush x:Key="ButtonBg" Color="#E1E1E1" />
+    <SolidColorBrush x:Key="ButtonHover" Color="#E5F1FB" />
+    <SolidColorBrush x:Key="ButtonBorder" Color="#C8C8C8" />
+    <SolidColorBrush x:Key="ActiveGreen" Color="#7CFC00" />
+    <SolidColorBrush x:Key="ActiveGreenBorder" Color="#5FC200" />
+    <SolidColorBrush x:Key="AccentBlue" Color="#3D8EE8" />
+    <SolidColorBrush x:Key="WarnYellow" Color="#FFE033" />
+    <SolidColorBrush x:Key="AlarmRed" Color="#FF4D4D" />
+    <SolidColorBrush x:Key="LinkBlue" Color="#1A4FD6" />
+
+    <!-- Left rail button -->
+    <Style TargetType="{x:Type c:RailButton}">
+        <Setter Property="Height" Value="21" />
+        <Setter Property="Margin" Value="6,1.5,6,1.5" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="Foreground" Value="#202020" />
+        <Setter Property="Background" Value="{StaticResource ButtonBg}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ButtonBorder}" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type c:RailButton}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="1">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0"
+                                          TextBlock.TextAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonHover}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBlue}" />
+                        </Trigger>
+                        <Trigger Property="IsActive" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ActiveGreen}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource ActiveGreenBorder}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#CCE4F7" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#A0A0A0" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Dotted separator between rail groups -->
+    <Style x:Key="RailSeparator" TargetType="Line">
+        <Setter Property="X1" Value="0" />
+        <Setter Property="X2" Value="62" />
+        <Setter Property="Stroke" Value="#B8B8B8" />
+        <Setter Property="StrokeThickness" Value="2" />
+        <Setter Property="StrokeDashArray" Value="1 1.5" />
+        <Setter Property="Margin" Value="6,4" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Flat gray button used inside panels (MTI, Enhancement, flyouts) -->
+    <Style x:Key="PanelButton" TargetType="Button">
+        <Setter Property="MinWidth" Value="70" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Margin" Value="3" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="Background" Value="{StaticResource ButtonBg}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ButtonBorder}" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonHover}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBlue}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#CCE4F7" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#A0A0A0" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Arrow / zoom / focus buttons in the Controls panel -->
+    <Style x:Key="PadButton" TargetType="Button">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="#202020" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ActiveGreen}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Map toolbar button (vector icon content, 24x24 design grid). BorderBrush marks the active tool. -->
+    <Style x:Key="MapToolButton" TargetType="Button">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="2">
+                        <Viewbox Width="26" Height="26">
+                            <Canvas Width="24" Height="24">
+                                <ContentPresenter />
+                            </Canvas>
+                        </Viewbox>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource ButtonHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#CCE4F7" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Blue document tab header ("Video", "Geo Map") -->
+    <Style x:Key="DocTab" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AccentBlue}" />
+        <Setter Property="Padding" Value="12,2,6,2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Height" Value="20" />
+    </Style>
+
+    <!-- Vertical side tab (Sensors, Telemetry, ...) -->
+    <Style x:Key="SideTab" TargetType="ToggleButton">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="#303030" />
+        <Setter Property="LayoutTransform">
+            <Setter.Value>
+                <RotateTransform Angle="90" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="#C8C8C8" BorderThickness="0,0,0,2" Padding="6,3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBlue}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBlue}" />
+                            <Setter TargetName="Bd" Property="Background" Value="#DCEBFB" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Status bar badge -->
+    <Style x:Key="Badge" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource AlarmRed}" />
+        <Setter Property="Padding" Value="3,0" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Docked tool panel with title, pin and close (MTI, Enhancement, Controls) -->
+    <Style x:Key="ToolPanel" TargetType="HeaderedContentControl">
+        <Setter Property="Margin" Value="2" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="HeaderedContentControl">
+                    <Border Background="{StaticResource PanelBg}" BorderBrush="#D0D0D0" BorderThickness="1">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Height="20" Margin="4,0,2,0">
+                                <Button DockPanel.Dock="Right" Content="✕" Width="18" Height="18" Padding="0" FontSize="10"
+                                        Background="Transparent" BorderThickness="0" Focusable="False" ToolTip="Close"
+                                        Command="ApplicationCommands.Close"
+                                        CommandParameter="{Binding RelativeSource={RelativeSource TemplatedParent}}" />
+                                <ContentPresenter ContentSource="Header" VerticalAlignment="Center" TextBlock.FontSize="11.5" />
+                            </DockPanel>
+                            <ContentPresenter Margin="4" />
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Flyout form styles -->
+    <Style x:Key="SectionHeader" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource AccentBlue}" />
+        <Setter Property="Margin" Value="0,12,0,4" />
+    </Style>
+
+    <Style TargetType="ToolTip">
+        <Setter Property="FontSize" Value="11.5" />
+    </Style>
+</ResourceDictionary>

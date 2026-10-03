@@ -1,0 +1,87 @@
+START 03-10-2026 10:40:29.87 
+C:\Program Files\dotnet\dotnet.exe
+9.0.301 [C:\Program Files\dotnet\sdk]
+=== RESTORE === 
+  Determining projects to restore...
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Video\Epsilon.Video.csproj (in 87 ms).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Core\Epsilon.Core.csproj (in 1.18 sec).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Simulator\Epsilon.Simulator.csproj (in 1.18 sec).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\tests\Epsilon.Core.Tests\Epsilon.Core.Tests.csproj (in 1.18 sec).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\EpsilonGCS\EpsilonGCS.csproj (in 1.19 sec).
+RESTORE_EXIT=0 
+=== BUILD === 
+  Epsilon.Video -> C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Video\bin\Release\net8.0\Epsilon.Video.dll
+  Epsilon.Core -> C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Core\bin\Release\net8.0\Epsilon.Core.dll
+  Epsilon.Simulator -> C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Simulator\bin\Release\net8.0\EpsilonSimulator.dll
+  Epsilon.Core.Tests -> C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\tests\Epsilon.Core.Tests\bin\Release\net8.0\Epsilon.Core.Tests.dll
+  EpsilonGCS -> C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\EpsilonGCS\bin\Release\net8.0-windows\win-x64\EpsilonGCS.dll
+
+Workload updates are available. Run `dotnet workload list` for more information.
+BUILD_EXIT=0 
+=== TEST === 
+Build started 03-10-2026 10:40:38.
+Test run for C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\tests\Epsilon.Core.Tests\bin\Release\net8.0\Epsilon.Core.Tests.dll (.NETCoreApp,Version=v8.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.21)
+[xUnit.net 00:00:00.34]   Discovering: Epsilon.Core.Tests
+[xUnit.net 00:00:00.37]   Discovered:  Epsilon.Core.Tests
+[xUnit.net 00:00:00.37]   Starting:    Epsilon.Core.Tests
+  Passed Epsilon.Core.Tests.ProtocolTests.SetControlMode_HasEightBytes [189 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_NoPositionOrHeight_ReturnsNull [189 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.GlobalStatus_UncertaintyScaleDependsOnCalibrationFlag [189 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_DefaultsPortAndAcceptsMissingScheme [191 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_RejectsOtherSchemesAndBadPaths [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Parser_LongRandomStream_FindsAllPackets [1 ms]
+  Passed Epsilon.Core.Tests.TsInspectorTests.HandlesRtpHeader [192 ms]
+  Passed Epsilon.Core.Tests.TsInspectorTests.CountsKlvPackets_WithKlvaRegistration [< 1 ms]
+  Passed Epsilon.Core.Tests.TsInspectorTests.CountsKlvPackets_MetadataStreamType [< 1 ms]
+  Passed Epsilon.Core.Tests.TsInspectorTests.IgnoresPrivateDataWithoutKlva [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.FrameLayout_HeaderAndDataChecksumsAndTerminator [2 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.StowAndPilotView_AreDegreesTimesTen [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.Parser_ReassemblesSplitAndConcatenatedPackets [2 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.LrfSettings_ModeBits [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.ZeroLengthPackets_MatchDocumentExamples [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.RateControl_EncodesSignedLittleEndian [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.NetworkSettings_FieldOffsets [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.VideoStabilizationOn_MatchesDocumentExample [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.EoSettings_IcrIsBit3OfCamMode [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.MessageIds_MatchSection41Table [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_AboveHorizon_IsClippedAtMaxRange [2 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.GeoParameters_FieldOffsets [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.Parser_RejectsCorruptChecksum [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.Parser_ZeroLengthAckAndBackToBackHeaderBytes [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_LookingNorthAt45Degrees [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.ByteOrder_MatchesSection31Example [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.CrcTable_MatchesDocumentTableStart [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Parser_RecoversAcrossSplitReadsAfterCorruption [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.GlobalStatus_ParsesFields [1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Parser_RecoversPacketHiddenBehindTruncatedPacket [2 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.TiltDirection_CanBeSwitchedBack [2 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.TiltUp_SendsNegativeTiltSpeed_ByDefault [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.Version_ParsesAllOffsets [5 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_LookingEast_RotatesWithAzimuth [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.ZeroLengthCommands_HaveNoDataAndNoDataChecksum [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.MwirParameters_BrightnessContrastAtBytes7And8 [1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.EthernetDisplay_ModeAndPadBit [< 1 ms]
+[xUnit.net 00:00:00.63]   Finished:    Epsilon.Core.Tests
+  Passed Epsilon.Core.Tests.SpecConformanceTests.ErrorReport_ParsesAllOffsets [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.PayloadLengths_MatchDocumentTables [1 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.AutomaticAddress_IsNotLinkLocalWhenAnotherAddressExists [18 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_HostNameIsAccepted [< 1 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_UsesPortAndPath [< 1 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_RejectsAddressOfAnotherComputer [11 ms]
+
+Test Run Successful.
+Total tests: 43
+     Passed: 43
+ Total time: 1.6772 Seconds
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.19
+
+Workload updates are available. Run `dotnet workload list` for more information.
+TEST_EXIT=0 
+DONE 03-10-2026 10:40:40.38 

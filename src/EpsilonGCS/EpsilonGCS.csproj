@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>EpsilonGCS</RootNamespace>
+    <AssemblyName>EpsilonGCS</AssemblyName>
+    <Product>Epsilon GCS</Product>
+    <Version>1.0.0</Version>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <!-- Allows building on non-Windows CI machines. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.8.5" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Epsilon.Core\Epsilon.Core.csproj" />
+    <ProjectReference Include="..\Epsilon.Video\Epsilon.Video.csproj" />
+  </ItemGroup>
+
+  <!-- Copy tools\ (ffmpeg.exe, mediamtx.exe) next to the exe if they were downloaded. -->
+  <ItemGroup>
+    <None Include="..\..\tools\*.exe" Condition="Exists('..\..\tools')">
+      <Link>tools\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\tools\get-tools.ps1">
+      <Link>tools\get-tools.ps1</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+</Project>

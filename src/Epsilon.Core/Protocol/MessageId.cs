@@ -1,0 +1,82 @@
+namespace Epsilon.Core.Protocol;
+
+/// <summary>Message IDs from sections 4.1 and 4.3 of the protocol document.</summary>
+public enum MessageId : byte
+{
+    EpsilonReset = 0x01,
+    GetVersion = 0x02,
+    GyroBias = 0x03,
+    RateControl = 0x05,
+    VideoStabilization = 0x07,
+    DoSnapshot = 0x08,
+    VideoRecording = 0x09,
+    ClearSdCard = 0x0A,
+    DigitalZoom = 0x0B,
+    OnScreenInformation = 0x0C,
+    VideoDisplaySize = 0x0D,
+    DesignateMti = 0x0E,
+    ShiftSelectedTrackMti = 0x0F,
+    FocusMode = 0x10,
+    SetPanTiltTrims = 0x11,
+    NetworkSettings = 0x12,
+    MtiParameters = 0x13,
+    SetControlMode = 0x14,
+    SetCameraOrder = 0x1A,
+    StowMode = 0x1D,
+    SetFalseColorMode = 0x1E,
+    EnableKlv = 0x1F,
+    VideoEnhancement = 0x21,
+    StabilizeOnTrack = 0x22,
+    VideoStabilizationParam = 0x23,
+    GeoLock = 0x24,
+    GeoParameters = 0x26,
+    IrFlirParam = 0x27,
+    IrMwirParam = 0x28,
+    GpsAntennaCalibration = 0x29,
+    MwirIntegrationTime = 0x2A,
+    LaserPointer = 0x2E,
+    GeoSimParameters = 0x2F,
+    LrfSettings = 0x30,
+    DoFfc = 0x31,
+    PipSettings = 0x35,
+    KlvStaticData = 0x36,
+    PanOffset = 0x37,
+    PilotViewAngle = 0x38,
+    GetImageSize = 0x39,
+    LaserSafetySector = 0x3A,
+    IrCoolerSettings = 0x3B,
+    PowerUpSettings = 0x3C,
+    BlendSettings = 0x3D,
+    BlendAlignment = 0x3E,
+    ResetDefaultSettings = 0x3F,
+    EoSpotterImxSettings = 0x41,
+    ErrorHandlingReqClr = 0x42,
+    ErrorHandlingResponse = 0x43,
+
+    // Packets sent from Epsilon (section 4.3)
+    GlobalStatus = 0x80,
+    Version = 0x81,
+    Errors = 0x82,   // GET_ERRORS request (zero length) and EPSILON_ERRORS reply
+
+    EoSettings = 0x91,
+    EthernetDisplayParameters = 0x95,
+    VideoOutputMode = 0x96,
+    H264Parameters = 0x97,
+    SaveAndResetVp = 0x98,
+    DeviceDiagnostic = 0xFA,
+}
+
+/// <summary>SET_CONTROL_MODE (0x14) byte 0, also reported in STATUS_FLAGS bits 16-23.</summary>
+public enum ControlMode : byte
+{
+    NoChange = 0,
+    Rate = 1,
+    RateAid = 2,
+    TrackStationary = 3,
+    TrackVehicle = 4,
+    TrackScene = 5,
+    TrackStatic = 6,
+    GeoLock = 7,
+    Stow = 8,
+    PilotView = 9,
+}
