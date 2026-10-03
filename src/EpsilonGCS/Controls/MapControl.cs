@@ -12,6 +12,14 @@ namespace EpsilonGCS.Controls;
 
 public enum MapTool { Pan, Ruler, Poi }
 
+public enum MapMarkerKind { Target, Splash }
+
+/// <summary>
+/// A clickable marker. <see cref="Kind"/> + <see cref="Id"/> identify the model object it shows
+/// (TargetInfo.Id / SplashInfo.Id); the map never stores the model itself.
+/// </summary>
+public sealed record MapMarker(MapMarkerKind Kind, int Id, double Lat, double Lon, string Label, bool Dimmed = false);
+
 /// <summary>A tile source the user can pick with the Layers button.</summary>
 public sealed record MapLayer(string Name, string UrlTemplate, string Attribution, int MaxZoom)
 {
@@ -53,6 +61,9 @@ public sealed class MapControl : Grid
     private double _aircraftHeading;
     private (double Lat, double Lon)? _target;
     private (double Lat, double Lon)[] _footprint;
+    private List<MapMarker> _markers = new();
+    private (MapMarkerKind Kind, int Id)? _selectedMarker;
+    private const double MarkerHitRadius = 14;
     private (double Lat, double Lon)? _home;
     private (double Lat, double Lon)? _rulerA, _rulerB;
     private Point _mouse;
@@ -121,6 +132,20 @@ public sealed class MapControl : Grid
         Refresh();
     }
 
+    /// <summary>
+    /// Centres a point in the part of the map that is not covered by a side panel
+    /// (<paramref name="coveredLeft"/> pixels on the left, <paramref name="coveredRight"/> on the right).
+    /// </summary>
+    public void CenterOn(double lat, double lon, double coveredLeft = 0, double coveredRight = 0)
+    {
+        if (ActualWidth <= 0) { SetView(lat, lon); return; }
+        double visibleCenterX = coveredLeft + Math.Max(0, ActualWidth - coveredLeft - coveredRight) / 2;
+        double dx = visibleCenterX - ActualWidth / 2;
+        _centerLon = NormalizeLon(XToLon(LonToX(NormalizeLon(lon), _zoom) - dx, _zoom));
+        _centerLat = Math.Clamp(lat, -85, 85);
+        Refresh();
+    }
+
     public void ZoomBy(int delta)
     {
         _zoom = Math.Clamp(_zoom + delta, MinZoom, _layer.MaxZoom);
@@ -183,6 +208,42 @@ public sealed class MapControl : Grid
     {
         _target = lat.HasValue && lon.HasValue ? (lat.Value, lon.Value) : null;
         DrawOverlay();
+    }
+
+    /// <summary>Raised when the operator clicks a target / splash marker (Pan tool). Not raised for map clicks.</summary>
+    public event Action<MapMarker> MarkerClicked;
+
+    /// <summary>Replaces all target / splash markers (call after the model changed).</summary>
+    public void SetMarkers(IEnumerable<MapMarker> markers)
+    {
+        _markers = markers?.ToList() ?? new List<MapMarker>();
+        DrawOverlay();
+    }
+
+    /// <summary>Highlights one marker (null clears the highlight).</summary>
+    public void SetSelectedMarker(MapMarkerKind? kind, int id = 0)
+    {
+        _selectedMarker = kind.HasValue ? (kind.Value, id) : null;
+        DrawOverlay();
+    }
+
+    /// <summary>The marker under a screen point, nearest first; null if none is within the hit radius.</summary>
+    public MapMarker HitTestMarker(Point p)
+    {
+        MapMarker best = null;
+        double bestDist = MarkerHitRadius;
+        foreach (var m in _markers)
+        {
+            var q = GeoToScreen(m.Lat, m.Lon);
+            double d = Math.Sqrt((q.X - p.X) * (q.X - p.X) + (q.Y - p.Y) * (q.Y - p.Y));
+            // Targets win over splashes at the same spot.
+            if (d < bestDist || (best != null && Math.Abs(d - bestDist) < 0.5 && m.Kind == MapMarkerKind.Target))
+            {
+                best = m;
+                bestDist = d;
+            }
+        }
+        return best;
     }
 
     /// <summary>Camera view polygon (ground footprint of the field of view); null hides it.</summary>
@@ -253,6 +314,10 @@ public sealed class MapControl : Grid
         {
             DrawOverlay();
         }
+        else if (Tool == MapTool.Pan && e.LeftButton != MouseButtonState.Pressed)
+        {
+            Cursor = _markers.Count > 0 && HitTestMarker(_mouse) != null ? Cursors.Hand : null;
+        }
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -262,6 +327,17 @@ public sealed class MapControl : Grid
         bool wasClick = _dragStart.HasValue && !_dragged;
         _dragStart = null;
         if (!wasClick) return;
+        if (Tool == MapTool.Pan)
+        {
+            // A click on a marker selects that target / splash; it never creates anything.
+            var hit = HitTestMarker(e.GetPosition(this));
+            if (hit != null)
+            {
+                MarkerClicked?.Invoke(hit);
+                e.Handled = true;
+                return;
+            }
+        }
         var geo = ScreenToGeo(e.GetPosition(this));
         if (Tool == MapTool.Ruler)
         {
@@ -482,6 +558,8 @@ public sealed class MapControl : Grid
             });
         }
 
+        DrawMarkers();
+
         if (_target.HasValue)
         {
             var t = GeoToScreen(_target.Value.Lat, _target.Value.Lon);
@@ -582,6 +660,63 @@ public sealed class MapControl : Grid
 
     private static string SafeName(string name) =>
         new string(name.Where(char.IsLetterOrDigit).ToArray());
+
+    private static readonly Brush SplashFill = new SolidColorBrush(Color.FromArgb(0x70, 0xF0, 0x80, 0x80));
+    private static readonly Brush SplashStroke = new SolidColorBrush(Color.FromRgb(0xD0, 0x40, 0x50));
+    private static readonly Brush SplashCross = new SolidColorBrush(Color.FromRgb(0x70, 0x10, 0x40));
+    private static readonly Brush TargetRing = new SolidColorBrush(Color.FromRgb(0xC0, 0x10, 0x10));
+    private static readonly Brush TargetFill = new SolidColorBrush(Color.FromArgb(0x50, 0xFF, 0x30, 0x30));
+    private static readonly Brush SelectedHalo = new SolidColorBrush(Color.FromArgb(0xC0, 0xFF, 0xD8, 0x00));
+
+    /// <summary>Targets: red bullseye. Splashes: pink diamond with a dark cross (as in Epsilon Control).</summary>
+    private void DrawMarkers()
+    {
+        // Splashes first so targets stay on top.
+        foreach (var m in _markers.OrderBy(m => m.Kind == MapMarkerKind.Target ? 1 : 0))
+        {
+            var p = GeoToScreen(m.Lat, m.Lon);
+            if (p.X < -50 || p.Y < -50 || p.X > ActualWidth + 50 || p.Y > ActualHeight + 50) continue;
+            bool selected = _selectedMarker.HasValue && _selectedMarker.Value.Kind == m.Kind && _selectedMarker.Value.Id == m.Id;
+            double opacity = m.Dimmed ? 0.45 : 1.0;
+
+            if (selected)
+            {
+                var halo = new Shapes.Ellipse { Width = 34, Height = 34, Stroke = SelectedHalo, StrokeThickness = 4 };
+                Canvas.SetLeft(halo, p.X - 17);
+                Canvas.SetTop(halo, p.Y - 17);
+                _overlay.Children.Add(halo);
+            }
+
+            if (m.Kind == MapMarkerKind.Splash)
+            {
+                _overlay.Children.Add(new Shapes.Polygon
+                {
+                    Points = new PointCollection { new(p.X, p.Y - 13), new(p.X + 15, p.Y), new(p.X, p.Y + 13), new(p.X - 15, p.Y) },
+                    Fill = SplashFill, Stroke = SplashStroke, StrokeThickness = 1.2, Opacity = opacity,
+                });
+                _overlay.Children.Add(new Shapes.Line { X1 = p.X - 11, Y1 = p.Y, X2 = p.X + 11, Y2 = p.Y, Stroke = SplashCross, StrokeThickness = 2.5, Opacity = opacity });
+                _overlay.Children.Add(new Shapes.Line { X1 = p.X, Y1 = p.Y - 10, X2 = p.X, Y2 = p.Y + 10, Stroke = SplashCross, StrokeThickness = 2.5, Opacity = opacity });
+            }
+            else
+            {
+                foreach (var (r, fill) in new[] { (11.0, TargetFill), (5.0, (Brush)Brushes.White) })
+                {
+                    var ring = new Shapes.Ellipse
+                    {
+                        Width = 2 * r, Height = 2 * r, Fill = fill, Stroke = TargetRing, StrokeThickness = 2.2, Opacity = opacity,
+                    };
+                    Canvas.SetLeft(ring, p.X - r);
+                    Canvas.SetTop(ring, p.Y - r);
+                    _overlay.Children.Add(ring);
+                }
+                var dot = new Shapes.Ellipse { Width = 3, Height = 3, Fill = TargetRing, Opacity = opacity };
+                Canvas.SetLeft(dot, p.X - 1.5);
+                Canvas.SetTop(dot, p.Y - 1.5);
+                _overlay.Children.Add(dot);
+            }
+            AddLabel(m.Label, p.X + 14, p.Y - 20);
+        }
+    }
 
     private void AddLabel(string text, double x, double y)
     {

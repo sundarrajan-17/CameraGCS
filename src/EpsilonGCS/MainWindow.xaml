@@ -30,6 +30,7 @@
                 <MenuItem x:Name="MenuMap" Header="Geo map" IsCheckable="True" IsChecked="True" Click="MenuMap_Click" />
                 <Separator />
                 <MenuItem Header="_Telemetry" Click="MenuOpenPage_Click" Tag="Telemetry" />
+                <MenuItem Header="T_argets &amp; splashes" Click="MenuOpenPage_Click" Tag="Targets" />
                 <MenuItem Header="_Errors..." Click="MenuErrors_Click" />
                 <MenuItem Header="_Diagnostic..." Click="MenuDiagnostic_Click" />
                 <MenuItem Header="_Log..." Click="MenuLog_Click" />
@@ -448,6 +449,8 @@
                     <ToggleButton Style="{StaticResource SideTab}" Content="Video Player" Tag="Player" Click="SideTab_Click" />
                     <ToggleButton Style="{StaticResource SideTab}" Content="Restream" Tag="Restream" Click="SideTab_Click"
                                   ToolTip="RTSP restream of the gimbal video" />
+                    <ToggleButton Style="{StaticResource SideTab}" Content="Targets" Tag="Targets" Click="SideTab_Click"
+                                  ToolTip="Targets and splashes on the map" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>

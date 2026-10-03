@@ -138,6 +138,15 @@ How the restream works:
 - **Track and scale:** the aircraft track is drawn as a trail. The scale bar shows nm and km.
 - **Simulated data:** when connected to the bundled simulator, an orange **SIMULATOR - simulated data** badge appears in the status bar. The Telemetry tab also shows "Data source: SIMULATOR". This way simulated values are never mistaken for real gimbal data.
 
+## 5a. Targets and splashes
+
+Open the **Targets** tab (right-hand side, or Window → Targets & splashes). The panel opens on the left of the map.
+
+- **Add a target:** right-click the map → **Add target here**, or press **+ Add target (camera geo point)** to use the point the camera is looking at.
+- **Click a target on the map** to select it in the list and show its details (name, position, status, notes, range). Selecting a row in the list highlights and centres it on the map. **Geo lock** points the gimbal at the selected target.
+- **Splash [+]:** records a splash at the camera's current GEO latitude / longitude (GEO_LATITUDE / GEO_LONGITUDE of the 0x80 status). It is refused, with the reason, when the gimbal has no fresh, valid geo solution. A splash is linked to the target selected at that moment.
+- Targets are red bullseyes, splashes pink diamonds with a cross. Targets and splashes are kept in memory for the session.
+
 ## 6. Keyboard
 
 | Key | Action |
@@ -154,6 +163,7 @@ How the restream works:
 | N | NUC |
 | C | Center gimbal (pilot view) |
 | F11 | Fullscreen video |
+| F5 | Re-synchronise live video |
 
 **J.STICK** enables an Xbox-compatible gamepad.
 

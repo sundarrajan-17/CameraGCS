@@ -67,6 +67,8 @@ public partial class MainWindow : Window
         Map.CursorMoved += OnMapCursor;
         Map.MapRightClicked += OnMapRightClick;
         Map.UserPanned += () => SetFollow(false);
+        Map.MarkerClicked += OnMapMarkerClicked;
+        Gcs.Targets.Changed += UpdateTargetMarkers;
         SetFollow(s.MapFollowGimbal);
         UpdateMapToolButtons();
 
@@ -131,7 +133,11 @@ public partial class MainWindow : Window
         try
         {
             Gcs.Video.Initialize();
+            // Attach the player to the view BEFORE anything is played, so LibVLC renders into the VideoView's window.
             VideoView.MediaPlayer = Gcs.Video.Player;
+            AppLog.Write($"[video] video view attached: {VideoView.ActualWidth:0}x{VideoView.ActualHeight:0}, visible={VideoView.IsVisible}");
+            if (VideoView.ActualWidth < 2 || VideoView.ActualHeight < 2)
+                AppLog.Write("[video] WARNING: video view has no size yet - the picture appears once the layout gives it space");
             Gcs.Video.Start();
         }
         catch (Exception ex)
@@ -279,9 +285,11 @@ public partial class MainWindow : Window
         _lastVideoPackets = packets;
 
         bool udp = Gcs.Settings.VideoInput == VideoInputKind.UdpMpegTs;
-        bool hasVideo = v.IsPlayback || (udp ? flowing : v.PlayerState == "Running");
+        bool hasVideo = v.IsPlayback || v.HasPicture;
         NoVideoText.Visibility = hasVideo ? Visibility.Collapsed : Visibility.Visible;
-        NoVideoText.Text = udp ? $"NO VIDEO\nwaiting on UDP {Gcs.Settings.VideoPort}" : "NO VIDEO";
+        NoVideoText.Text = udp
+            ? (flowing ? $"RECEIVING VIDEO\nstarting player ({v.PlayerState})" : $"NO VIDEO\nwaiting on UDP {Gcs.Settings.VideoPort}")
+            : $"NO VIDEO\n{v.PlayerState}";
         NoVideoText.TextAlignment = TextAlignment.Center;
 
         VideoStatusText.Text = !v.IsPlayback && udp && !flowing ? "No signal" : v.PlayerState;
@@ -323,7 +331,11 @@ public partial class MainWindow : Window
 
     private void BtnLive_Click(object sender, RoutedEventArgs e)
     {
-        Gcs.Video.Start();
+        AppLog.Write($"[video] LIVE clicked - view {VideoView.ActualWidth:0}x{VideoView.ActualHeight:0}, " +
+                     $"player attached={ReferenceEquals(VideoView.MediaPlayer, Gcs.Video.Player)}, restream={Gcs.Restreamer.State}");
+        // Re-attach if the view lost its player (e.g. after a shutdown attempt); harmless when already attached.
+        if (!ReferenceEquals(VideoView.MediaPlayer, Gcs.Video.Player)) VideoView.MediaPlayer = Gcs.Video.Player;
+        Gcs.Video.GoLive();
         UpdatePlaybackBar();
     }
 
@@ -826,7 +838,25 @@ public partial class MainWindow : Window
         centerHome.Click += (_, _) => { SetFollow(false); Map.SetView(home.Value.Lat, home.Value.Lon); };
         var setHome = new MenuItem { Header = "Set home here" };
         setHome.Click += (_, _) => { Map.SetHome(lat, lon); AppLog.Write($"Home set to {lat:0.000000}, {lon:0.000000}"); };
+        var addTarget = new MenuItem { Header = $"Add target here  ({lat:0.00000}, {lon:0.00000})" };
+        addTarget.Click += (_, _) =>
+        {
+            var t = Gcs.Targets.AddTarget(lat, lon, Epsilon.Core.Targets.TargetSource.Map);
+            AppLog.Write($"[targets] {t.Name} added on the map at {lat:0.000000}, {lon:0.000000}");
+            if (_activePageKey != "Targets") OpenPage("Targets");
+            TargetsPageInstance?.SelectTarget(t.Id);
+            Map.SetSelectedMarker(MapMarkerKind.Target, t.Id);
+        };
+        var hit = Map.HitTestMarker(p);
         menu.Items.Add(geo);
+        menu.Items.Add(addTarget);
+        if (hit != null)
+        {
+            var open = new MenuItem { Header = $"Show {hit.Label}", FontWeight = FontWeights.SemiBold };
+            open.Click += (_, _) => OnMapMarkerClicked(hit);
+            menu.Items.Insert(0, open);
+            menu.Items.Insert(1, new Separator());
+        }
         menu.Items.Add(new Separator());
         menu.Items.Add(copy);
         menu.Items.Add(center);
@@ -943,8 +973,95 @@ public partial class MainWindow : Window
         "Geo" => new GeoPage(),
         "Restream" => new RestreamPage(),
         "Player" => new VideoPlayerPage(),
+        "Targets" => CreateTargetsPage(),
         _ => null,
     };
+
+    // =====================================================================================
+    // Targets & splashes (model: Gcs.Targets; views: TargetsPage + map markers)
+    // =====================================================================================
+
+    private const double TargetsPanelWidth = 450;
+    private GridLength? _mapWidthBeforeTargets;
+
+    private TargetsPage TargetsPageInstance => _pages.TryGetValue("Targets", out var p) ? p as TargetsPage : null;
+
+    private TargetsPage CreateTargetsPage()
+    {
+        var page = new TargetsPage();
+        // list -> map
+        page.TargetSelected += (id, center) =>
+        {
+            var t = Gcs.Targets.FindTarget(id);
+            if (t == null) return;
+            Map.SetSelectedMarker(MapMarkerKind.Target, id);
+            if (center) CenterMapOn(t.Latitude, t.Longitude);
+        };
+        page.SplashSelected += (id, center) =>
+        {
+            var s = Gcs.Targets.FindSplash(id);
+            if (s == null) return;
+            Map.SetSelectedMarker(MapMarkerKind.Splash, id);
+            if (center) CenterMapOn(s.Latitude, s.Longitude);
+        };
+        page.SelectionCleared += () => Map.SetSelectedMarker(null);
+        return page;
+    }
+
+    /// <summary>Map marker click -> find the model by ID -> open the Targets page and select it there.</summary>
+    private void OnMapMarkerClicked(MapMarker m)
+    {
+        bool exists = m.Kind == MapMarkerKind.Target ? Gcs.Targets.FindTarget(m.Id) != null : Gcs.Targets.FindSplash(m.Id) != null;
+        if (!exists) { UpdateTargetMarkers(); return; }  // stale marker: redraw from the store
+        if (_activePageKey != "Targets") OpenPage("Targets");
+        var page = TargetsPageInstance;
+        if (page == null) return;
+        if (m.Kind == MapMarkerKind.Target) page.SelectTarget(m.Id);
+        else page.SelectSplash(m.Id);
+        Map.SetSelectedMarker(m.Kind, m.Id);
+    }
+
+    /// <summary>Rebuilds the map markers from the store (the store raises Changed on the UI thread).</summary>
+    private void UpdateTargetMarkers()
+    {
+        var markers = new List<MapMarker>();
+        foreach (var s in Gcs.Targets.Splashes)
+            markers.Add(new MapMarker(MapMarkerKind.Splash, s.Id, s.Latitude, s.Longitude, s.Name));
+        foreach (var t in Gcs.Targets.Targets)
+            markers.Add(new MapMarker(MapMarkerKind.Target, t.Id, t.Latitude, t.Longitude, t.Name,
+                                      Dimmed: t.Status == Epsilon.Core.Targets.TargetStatus.Inactive));
+        Map.SetMarkers(markers);
+    }
+
+    private void CenterMapOn(double lat, double lon)
+    {
+        SetFollow(false);
+        bool panelLeft = FlyoutHost.Visibility == Visibility.Visible && FlyoutHost.HorizontalAlignment == HorizontalAlignment.Left;
+        bool panelRight = FlyoutHost.Visibility == Visibility.Visible && FlyoutHost.HorizontalAlignment == HorizontalAlignment.Right;
+        Map.CenterOn(lat, lon, panelLeft ? FlyoutHost.ActualWidth : 0, panelRight ? FlyoutHost.ActualWidth : 0);
+    }
+
+    /// <summary>
+    /// The Targets page sits on the LEFT of the map (as in Epsilon Control) and is wider than the other pages;
+    /// the map column is widened while it is open so the map stays usable, and restored afterwards.
+    /// </summary>
+    private void ApplyFlyoutLayout(string key)
+    {
+        bool targets = key == "Targets";
+        FlyoutHost.HorizontalAlignment = targets ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        FlyoutHost.Width = targets ? TargetsPanelWidth : 390;
+        if (targets)
+        {
+            _mapWidthBeforeTargets ??= MapColumn.Width;
+            double wanted = TargetsPanelWidth + 330;
+            if (MapColumn.ActualWidth < wanted) MapColumn.Width = new GridLength(wanted);
+        }
+        else if (_mapWidthBeforeTargets.HasValue)
+        {
+            MapColumn.Width = _mapWidthBeforeTargets.Value;
+            _mapWidthBeforeTargets = null;
+        }
+    }
 
     private void OpenPage(string key)
     {
@@ -957,6 +1074,7 @@ public partial class MainWindow : Window
         if (MapPane.Visibility != Visibility.Visible) SetMapVisible(true);
         _activePage = page;
         _activePageKey = key;
+        ApplyFlyoutLayout(key);
         FlyoutTitle.Text = page.Title;
         FlyoutContent.Content = page;
         FlyoutHost.Visibility = Visibility.Visible;
@@ -972,6 +1090,7 @@ public partial class MainWindow : Window
         FlyoutContent.Content = null;
         _activePage = null;
         _activePageKey = null;
+        ApplyFlyoutLayout(null);
         foreach (var tb in SideTabs.Children.OfType<ToggleButton>()) tb.IsChecked = false;
     }
 

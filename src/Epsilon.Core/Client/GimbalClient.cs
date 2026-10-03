@@ -78,7 +78,17 @@ public sealed class GimbalClient : IDisposable
     public bool IsOpen => _transport?.IsOpen == true;
     public bool IsConnected => _connected;
     public string TransportDescription => _transport?.Description ?? "Not connected";
-    public GlobalStatus LastStatus { get; private set; }
+    private GlobalStatus _lastStatus;
+
+    /// <summary>
+    /// Latest EPSILON_GLOBAL_STATUS (0x80), written by the receive thread. <see cref="GlobalStatus"/> is immutable and
+    /// the reference is published atomically, so any thread can read a consistent snapshot without locking.
+    /// </summary>
+    public GlobalStatus LastStatus
+    {
+        get => Volatile.Read(ref _lastStatus);
+        private set => Volatile.Write(ref _lastStatus, value);
+    }
     public VersionInfo Version { get; private set; }
     public long PacketsSent { get; private set; }
     public long PacketsReceived => _parser.GoodPackets;
@@ -218,8 +228,9 @@ public sealed class GimbalClient : IDisposable
             switch (p.Id)
             {
                 case MessageId.GlobalStatus when p.Length >= 4:
-                    LastStatus = GlobalStatus.Parse(p.Data);
-                    StatusReceived?.Invoke(LastStatus);
+                    var status = GlobalStatus.Parse(p.Data);
+                    LastStatus = status;
+                    StatusReceived?.Invoke(status);
                     break;
                 case MessageId.Version when p.Length >= 12:
                     Version = VersionInfo.Parse(p.Data);

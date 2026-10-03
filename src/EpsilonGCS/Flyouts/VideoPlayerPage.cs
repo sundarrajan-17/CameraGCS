@@ -28,7 +28,7 @@ public sealed class VideoPlayerPage : FlyoutPage
         _source = F.Value("Now playing");
         _time = F.Value("Position");
         F.Buttons(("Open file...", OpenFile), ("Play / Pause", () => Gcs.Video.TogglePause()),
-                  ("Stop", () => Gcs.Video.StopPlayback()), ("LIVE", () => Gcs.Video.Start()));
+                  ("Stop", () => Gcs.Video.StopPlayback()), ("LIVE", () => Gcs.Video.GoLive()));
         _rate = F.Choice("Speed", 3, (1, "0.25x"), (2, "0.5x"), (3, "1x"), (4, "2x"), (5, "4x"));
         _rate.Box.SelectionChanged += (_, _) => Gcs.Video.SetRate(RateValue());
         F.Note("Use the timeline under the video to seek. The live stream and RTSP restream keep running in the background.");

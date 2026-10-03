@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using Epsilon.Core.Client;
 using Epsilon.Core.Protocol;
+using Epsilon.Core.Targets;
 using Epsilon.Core.Transport;
 using Epsilon.Video;
 
@@ -37,7 +38,16 @@ public static class Gcs
 
         Video = new VideoService();
         Video.Log += AppLog.Write;
+
+        // The restreamer reports from a background task; the display reacts on the UI thread.
+        Restreamer.StateChanged += _ =>
+            Application.Current?.Dispatcher.BeginInvoke(new Action(() => Video.OnRestreamStateChanged()));
+
+        Targets = new TargetStore();
     }
+
+    /// <summary>Targets and splashes marked by the operator (in memory, shared by the map and the Targets page).</summary>
+    public static TargetStore Targets { get; private set; }
 
     public static void ConnectGimbal()
     {
@@ -71,6 +81,7 @@ public static class Gcs
 
     public static void StartRestream()
     {
+        AppLog.Write($"[restream] start requested (video input {Settings.VideoInput}, mode {Settings.Restream.Mode})");
         var input = Video.RestreamInputUrl();
         if (input == null) return;
         Restreamer.Start(Settings.Restream, input);
@@ -78,6 +89,7 @@ public static class Gcs
 
     public static void StopRestream()
     {
+        AppLog.Write("[restream] stop requested");
         Restreamer.Stop();
         Video.EnableRestreamTap(false);
     }

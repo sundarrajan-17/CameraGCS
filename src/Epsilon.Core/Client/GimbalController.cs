@@ -1,4 +1,5 @@
 using Epsilon.Core.Protocol;
+using Epsilon.Core.Targets;
 
 namespace Epsilon.Core.Client;
 
@@ -44,6 +45,32 @@ public sealed class GimbalController
     private bool Has(StatusFlags f) => Client.LastStatus?.Has(f) == true;
 
     public ControlMode Mode => Client.LastStatus?.Mode ?? ControlMode.NoChange;
+
+    /// <summary>Status older than this is not used for new targets / splashes.</summary>
+    public static readonly TimeSpan GeoPointMaxAge = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// The camera's current geo point: GEO_LATITUDE / GEO_LONGITUDE (bytes 39-46 of EPSILON_GLOBAL_STATUS 0x80),
+    /// i.e. where the line of sight meets the ground. Thread-safe (reads one immutable status snapshot).
+    /// Returns false with a reason when there is no fresh, valid geo solution.
+    /// </summary>
+    public bool TryGetGeoPoint(out GeoPoint point, out string reason)
+    {
+        point = default;
+        var s = Client.LastStatus;                       // one snapshot: all fields below come from the same packet
+        if (s == null) { reason = "No status received from the gimbal yet."; return false; }
+        var age = DateTime.UtcNow - s.ReceivedUtc;
+        if (age > GeoPointMaxAge) { reason = $"Gimbal status is {age.TotalSeconds:0.0} s old - link lost?"; return false; }
+        if (s.Has(StatusFlags.GeoInactive)) { reason = "GEO is not active on the gimbal (no GPS / GEO solution)."; return false; }
+        if (!TargetStore.IsValidPosition(s.TargetLat, s.TargetLon))
+        {
+            reason = $"The gimbal reports no valid geo point (lat {s.TargetLat:0.000000}, lon {s.TargetLon:0.000000}).";
+            return false;
+        }
+        point = new GeoPoint(s.TargetLat, s.TargetLon, s.GeoDistanceM, s.Has(StatusFlags.SlantRangeMeasured), s.ReceivedUtc);
+        reason = null;
+        return true;
+    }
     public bool IsIrActive => Has(StatusFlags.ActiveCameraIr);
     public bool IsRecording => Has(StatusFlags.VideoRecording);
     public bool IsLaserOn => Has(StatusFlags.LaserPointerOn);
@@ -144,3 +171,6 @@ public sealed class GimbalController
     public void SetEnhancement(int filter, int sharpening, int blend, int strength, int denoise, bool defaults) =>
         Send(Cmd.VideoEnhancement(filter, sharpening, blend, strength, denoise, IsIrActive ? 1 : 0, defaults));
 }
+
+/// <summary>A geo point reported by the gimbal, with the range and time it was measured.</summary>
+public readonly record struct GeoPoint(double Latitude, double Longitude, int RangeM, bool RangeByLrf, DateTime TimeUtc);

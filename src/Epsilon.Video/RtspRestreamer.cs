@@ -63,6 +63,15 @@ public sealed class RtspRestreamer : IDisposable
     public RestreamState State => _state;
     public string StatusText { get; private set; } = "Stopped";
     public string OutputUrl { get; private set; } = "";
+
+    /// <summary>The source FFmpeg reads (camera RTSP URL or the local UDP tap); null when stopped.</summary>
+    public string InputUrl { get; private set; }
+
+    /// <summary>
+    /// Serve mode: URL this PC can read the restream from (rtsp://127.0.0.1:port/path). The GCS display uses it
+    /// so the camera is not opened twice. Null when stopped or in Push mode.
+    /// </summary>
+    public string LocalReadUrl { get; private set; }
     public string FfmpegPath => System.IO.Path.Combine(_toolsDir, "ffmpeg.exe");
     public string MediaMtxPath => System.IO.Path.Combine(_toolsDir, "mediamtx.exe");
 
@@ -98,6 +107,8 @@ public sealed class RtspRestreamer : IDisposable
         }
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
+        InputUrl = inputUrl;
+        Log?.Invoke($"[restream] start: input {inputUrl}, mode {s.Mode}");
         _ = Task.Run(() => Supervise(s, ep, inputUrl, ct));
     }
 
@@ -158,9 +169,11 @@ public sealed class RtspRestreamer : IDisposable
         _cts = null;
         Kill(ref _ffmpeg);
         Kill(ref _mediamtx);
+        OutputUrl = "";
+        InputUrl = null;
+        LocalReadUrl = null;
         if (_state != RestreamState.Stopped)
             SetState(RestreamState.Stopped, "Stopped");
-        OutputUrl = "";
     }
 
     private async Task Supervise(RestreamSettings s, ServeEndpoint ep, string inputUrl, CancellationToken ct)
@@ -172,6 +185,7 @@ public sealed class RtspRestreamer : IDisposable
             string yml = WriteMediaMtxConfig(s, ep.Port, ep.Path);
             OutputUrl = ep.Url;
             publishUrl = $"rtsp://127.0.0.1:{ep.Port}/{ep.Path}";
+            LocalReadUrl = publishUrl;
             _mediamtx = StartProcess(MediaMtxPath, Quote(yml), "mediamtx");
             if (_mediamtx == null) { SetState(RestreamState.Error, "Could not start MediaMTX"); return; }
             try { await Task.Delay(800, ct); } catch (OperationCanceledException) { return; }
