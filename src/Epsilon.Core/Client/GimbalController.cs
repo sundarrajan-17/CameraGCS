@@ -50,6 +50,28 @@ public sealed class GimbalController
     public static readonly TimeSpan GeoPointMaxAge = TimeSpan.FromSeconds(2);
 
     /// <summary>
+    /// The camera's own position: CAM_LATITUDE / CAM_LONGITUDE (bytes 17-24 of EPSILON_GLOBAL_STATUS 0x80),
+    /// from the gimbal's GPS. Thread-safe snapshot read, same freshness rule as <see cref="TryGetGeoPoint"/>.
+    /// </summary>
+    public bool TryGetCameraPosition(out double lat, out double lon, out string reason)
+    {
+        lat = lon = 0;
+        var s = Client.LastStatus;
+        if (s == null) { reason = "No status received from the gimbal yet."; return false; }
+        var age = DateTime.UtcNow - s.ReceivedUtc;
+        if (age > GeoPointMaxAge) { reason = $"Gimbal status is {age.TotalSeconds:0.0} s old - link lost?"; return false; }
+        if (!TargetStore.IsValidPosition(s.CamLat, s.CamLon))
+        {
+            reason = "The gimbal reports no camera position (no GPS fix?).";
+            return false;
+        }
+        lat = s.CamLat;
+        lon = s.CamLon;
+        reason = null;
+        return true;
+    }
+
+    /// <summary>
     /// The camera's current geo point: GEO_LATITUDE / GEO_LONGITUDE (bytes 39-46 of EPSILON_GLOBAL_STATUS 0x80),
     /// i.e. where the line of sight meets the ground. Thread-safe (reads one immutable status snapshot).
     /// Returns false with a reason when there is no fresh, valid geo solution.

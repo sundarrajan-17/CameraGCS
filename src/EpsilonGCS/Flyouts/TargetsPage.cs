@@ -31,8 +31,16 @@ public sealed class TargetsPage : FlyoutPage
     private readonly DataGrid _targetGrid, _splashGrid;
     private readonly TextBlock _geoNow, _details;
     private readonly TextField _name, _notes;
-    private readonly NumField _lat, _lon;
+    private readonly TextField _lat, _lon;                       // selected-target edit (any accepted format)
+    private readonly TextField _manName, _manLat, _manLon;       // manual entry of a new target
     private readonly ChoiceField _status;
+
+    // Correction section
+    private static readonly string[] Units = { "m", "ft", "yd" };
+    private readonly TextBlock _mpi, _leftRight, _addDrop, _correctionInfo, _unitCalc;
+    private readonly ChoiceField _units;
+    private CorrectionResult _lastCorrection;
+    private int? _lastTargetId;   // target the correction refers to (kept while a splash row is selected)
     private bool _syncing;   // true while the selection is set from code (marker click / refresh)
     private bool _centerOnSelect = true;
 
@@ -58,13 +66,22 @@ public sealed class TargetsPage : FlyoutPage
         _targetGrid.SelectionChanged += (_, _) => OnTargetSelectionChanged();
         F.Add(_targetGrid);
 
+        // ---------------- manual entry
+        F.Section("Add target manually");
+        _manName = F.Text("Name", "", "Optional - default \"Target N\"");
+        _manLat = F.Text("Latitude", "", CoordinateHelp);
+        _manLon = F.Text("Longitude", "", CoordinateHelp);
+        F.Buttons(("+ Add manual target", AddManualTarget), ("Clear", () => { _manName.Value = _manLat.Value = _manLon.Value = ""; }));
+        F.Note("Decimal degrees (13.454576 / 80.226849), D M S (13 27 16.47 N) or D M.m (13 27.2746 N). " +
+               "A whole pair \"13.454576, 80.226849\" can be pasted into Latitude.");
+
         // ---------------- selected target details
         F.Section("Selected target");
         _details = new TextBlock { Foreground = Brushes.DimGray, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 4) };
         F.Add(_details);
         _name = F.Text("Name", "");
-        _lat = F.Number("Latitude °", 0, -90, 90);
-        _lon = F.Number("Longitude °", 0, -180, 180);
+        _lat = F.Text("Latitude", "", CoordinateHelp);
+        _lon = F.Text("Longitude", "", CoordinateHelp);
         _status = F.Choice("Status", 0, "Active", "Inactive");
         _notes = F.Text("Notes", "");
         F.Buttons(("Apply", ApplyDetails), ("Center map", () => { if (SelectedTargetId is int id) TargetSelected?.Invoke(id, true); }),
@@ -82,6 +99,38 @@ public sealed class TargetsPage : FlyoutPage
             ("Target", nameof(SplashRow.Target), 66));
         _splashGrid.SelectionChanged += (_, _) => OnSplashSelectionChanged();
         F.Add(_splashGrid);
+
+        // ---------------- correction (below the splashes, as in Epsilon Control)
+        F.Section("Correction");
+        _mpi = F.Value("MPI:");
+        _mpi.TextWrapping = TextWrapping.Wrap;
+        _units = F.Choice("Units", 0, Units);
+        _units.Box.SelectionChanged += (_, _) => { ShowCorrection(); if (_unitCalc != null) ShowUnitCalculation(); };
+        _leftRight = F.Value("Left/Right:");
+        _addDrop = F.Value("Add/Drop:");
+        foreach (var tb in new[] { _leftRight, _addDrop }) { tb.FontWeight = FontWeights.Bold; tb.FontSize = 13; }
+        var calculate = new Button
+        {
+            Content = "Calculate", Style = (Style)Application.Current.FindResource("PanelButton"),
+            HorizontalAlignment = HorizontalAlignment.Stretch, Height = 26, Margin = new Thickness(0, 6, 0, 2),
+            ToolTip = "MPI of the selected target's splashes and the Left/Right, Add/Drop correction seen from the camera",
+        };
+        calculate.Click += (_, _) => Calculate();
+        F.Add(calculate);
+        _correctionInfo = new TextBlock { Foreground = Brushes.DimGray, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 6) };
+        F.Add(_correctionInfo);
+
+        // Latest Units-page calculation (Unit -> Target line). Shown separately: it does not use or change the MPI above.
+        _unitCalc = new TextBlock
+        {
+            FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 8),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x10, 0x3C, 0x9C)),
+        };
+        F.Add(_unitCalc);
+        Gcs.Units.Changed += ShowUnitCalculation;
+        Gcs.Targets.Changed += ShowUnitCalculation;
+        ShowUnitCalculation();
+        ClearCorrection("Select a target, record its splashes with [+], then press Calculate.");
 
         Gcs.Targets.Changed += Refresh;
         Refresh();
@@ -133,6 +182,11 @@ public sealed class TargetsPage : FlyoutPage
         if (_syncing) return;
         var t = SelectedTargetId is int id ? Gcs.Targets.FindTarget(id) : null;
         ShowDetails(t);
+        if (t != null && t.Id != _lastTargetId)
+        {
+            _lastTargetId = t.Id;
+            ClearCorrection($"Target: {t.Name}. Press Calculate.");
+        }
         if (t == null)
         {
             if (_splashGrid.SelectedItem == null) SelectionCleared?.Invoke();
@@ -159,6 +213,32 @@ public sealed class TargetsPage : FlyoutPage
     }
 
     // ================================================================ commands
+
+    internal const string CoordinateHelp =
+        "Decimal degrees, D M S or D M.m; N/S/E/W or a minus sign. A \"lat, lon\" pair can be pasted into Latitude.";
+
+    /// <summary>Manual target: typed coordinates, validated, stored as <see cref="TargetSource.Manual"/>.</summary>
+    private void AddManualTarget()
+    {
+        if (!CoordinateParser.TryParse(_manLat.Value, _manLon.Value, out double lat, out double lon, out string error))
+        {
+            Warn("Add target manually", error);
+            return;
+        }
+        var t = Gcs.Targets.AddTarget(lat, lon, TargetSource.Manual, string.IsNullOrWhiteSpace(_manName.Value) ? null : _manName.Value);
+        AppLog.Write($"[targets] {t.Name} added manually at {Fmt(t.Latitude)}, {Fmt(t.Longitude)}");
+        _manName.Value = _manLat.Value = _manLon.Value = "";
+        SelectTargetAndCenter(t.Id);
+    }
+
+    /// <summary>Selects a target in the list and centres the map on it (newly added targets).</summary>
+    private void SelectTargetAndCenter(int id)
+    {
+        var row = _targetGrid.Items.OfType<TargetRow>().FirstOrDefault(r => r.Id == id);
+        if (row == null) return;
+        _targetGrid.SelectedItem = row;           // raises TargetSelected(id, center: true)
+        _targetGrid.ScrollIntoView(row);
+    }
 
     private void AddTargetFromCamera()
     {
@@ -196,11 +276,16 @@ public sealed class TargetsPage : FlyoutPage
     private void ApplyDetails()
     {
         if (SelectedTargetId is not int id) return;
+        if (!CoordinateParser.TryParse(_lat.Value, _lon.Value, out double lat, out double lon, out string error))
+        {
+            Warn("Targets", error);   // nothing is changed on a typing error
+            return;
+        }
         try
         {
-            Gcs.Targets.UpdateTarget(id, _name.Value, _lat.Value, _lon.Value,
+            Gcs.Targets.UpdateTarget(id, _name.Value, lat, lon,
                                      _status.Value == 1 ? TargetStatus.Inactive : TargetStatus.Active, _notes.Value);
-            AppLog.Write($"[targets] target {id} updated");
+            AppLog.Write($"[targets] target {id} updated: {Fmt(lat)}, {Fmt(lon)}");
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -262,12 +347,12 @@ public sealed class TargetsPage : FlyoutPage
         if (!has)
         {
             _details.Text = "Select a target in the list or click it on the map.";
-            _name.Value = ""; _notes.Value = "";
+            _name.Value = ""; _notes.Value = ""; _lat.Value = ""; _lon.Value = "";
             return;
         }
         _name.Value = t.Name;
-        _lat.Value = t.Latitude;
-        _lon.Value = t.Longitude;
+        _lat.Value = Fmt(t.Latitude);
+        _lon.Value = Fmt(t.Longitude);
         _status.Value = t.Status == TargetStatus.Inactive ? 1 : 0;
         _notes.Value = t.Notes;
         string range = t.RangeM is int r ? $", range {r} m ({(t.RangeMeasuredByLrf ? "LRF" : "calculated")})" : "";
@@ -304,6 +389,89 @@ public sealed class TargetsPage : FlyoutPage
         foreach (var (header, path, width) in columns)
             grid.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(path), Width = new DataGridLength(width) });
         return grid;
+    }
+
+    // ================================================================ correction
+
+    /// <summary>The target the correction is for: the selected target, else the selected splash's target, else the last one.</summary>
+    private TargetInfo CorrectionTarget()
+    {
+        if (SelectedTargetId is int id) return Gcs.Targets.FindTarget(id);
+        if (SelectedSplashId is int sid && Gcs.Targets.FindSplash(sid)?.TargetId is int tid) return Gcs.Targets.FindTarget(tid);
+        return _lastTargetId is int last ? Gcs.Targets.FindTarget(last) : null;
+    }
+
+    /// <summary>
+    /// Calculate: MPI = mean of the target's splashes. Camera position = CAM_LATITUDE / CAM_LONGITUDE of the latest
+    /// gimbal status. Target and MPI are converted with latlon_to_xy_approx(camera, point, azimuth camera->target);
+    /// the difference gives Left/Right (across) and Add/Drop (along the camera-target line).
+    /// </summary>
+    private void Calculate()
+    {
+        var target = CorrectionTarget();
+        if (target == null) { ClearCorrection("Select a target first."); return; }
+        var splashes = Gcs.Targets.Splashes.Where(s => s.TargetId == target.Id).ToList();
+        if (splashes.Count == 0)
+        {
+            ClearCorrection($"{target.Name} has no splashes. Select the target, then press Splash [+] to record them.");
+            return;
+        }
+        if (!Gcs.Controller.TryGetCameraPosition(out double camLat, out double camLon, out string reason))
+        {
+            ClearCorrection("Camera position not available: " + reason);
+            return;
+        }
+        try
+        {
+            _lastCorrection = FireCorrection.Calculate(camLat, camLon, target, splashes);
+            _lastTargetId = target.Id;
+            ShowCorrection();
+            _correctionInfo.Text = $"{target.Name}  ·  camera {Fmt(camLat)}, {Fmt(camLon)}  ·  " +
+                                   $"azimuth {_lastCorrection.BearingDeg:0.0}°  ·  range {_lastCorrection.TargetRangeM:0} m";
+            AppLog.Write($"[targets] correction for {target.Name}: MPI {Fmt(_lastCorrection.MpiLatitude)}, {Fmt(_lastCorrection.MpiLongitude)} " +
+                         $"({splashes.Count} splashes), {FireCorrection.FormatLeftRight(_lastCorrection.LeftRightM, "m")}, " +
+                         $"{FireCorrection.FormatAddDrop(_lastCorrection.AddDropM, "m")}, azimuth {_lastCorrection.BearingDeg:0.0}°");
+        }
+        catch (ArgumentException ex)
+        {
+            ClearCorrection(ex.Message);
+        }
+    }
+
+    private void ShowCorrection()
+    {
+        if (_lastCorrection == null || _mpi == null) return;
+        string unit = Units[Math.Clamp(_units.Value, 0, Units.Length - 1)];
+        var c = _lastCorrection;
+        _mpi.Text = $"{Fmt(c.MpiLatitude)}, {Fmt(c.MpiLongitude)}  ({c.SplashCount} splash{(c.SplashCount == 1 ? "" : "es")})";
+        _leftRight.Text = FireCorrection.FormatLeftRight(c.LeftRightM, unit);
+        _addDrop.Text = FireCorrection.FormatAddDrop(c.AddDropM, unit);
+    }
+
+    /// <summary>Read-only summary of the last Unit / Target / Splash calculation from the Units page.</summary>
+    private void ShowUnitCalculation()
+    {
+        var c = Gcs.Units.LastCalculation;
+        var u = c != null ? Gcs.Units.FindUnit(c.UnitId) : null;
+        var t = c != null ? Gcs.Targets.FindTarget(c.TargetId) : null;
+        var s = c != null ? Gcs.Targets.FindSplash(c.SplashId) : null;
+        if (c == null || u == null || t == null || s == null)
+        {
+            _unitCalc.Text = "Unit calculation: none (Units tab > Calculate).";
+            return;
+        }
+        string unit = Units[Math.Clamp(_units.Value, 0, Units.Length - 1)];
+        _unitCalc.Text = $"Unit calculation ({c.CalculatedAt:HH:mm:ss}) {u.Name} → {t.Name}, {s.Name}: " +
+                         $"{FireCorrection.FormatAddDrop(c.CorrectionAddDropM, unit)}, {FireCorrection.FormatLeftRight(c.CorrectionLeftRightM, unit)} " +
+                         $"(splash {Math.Abs(FireCorrection.ToUnit(c.AddDropM, unit)):0} {unit} {(c.AddDropM >= 0 ? "beyond" : "short")}, " +
+                         $"{Math.Abs(FireCorrection.ToUnit(c.LeftRightM, unit)):0} {unit} {(c.LeftRightM >= 0 ? "right" : "left")})";
+    }
+
+    private void ClearCorrection(string message)
+    {
+        _lastCorrection = null;
+        _mpi.Text = _leftRight.Text = _addDrop.Text = "";
+        _correctionInfo.Text = message;
     }
 
     private static string Fmt(double v) => v.ToString("0.000000", CultureInfo.InvariantCulture);

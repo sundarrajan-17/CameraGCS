@@ -1,13 +1,13 @@
-START 03-10-2026 18:06:58.62 
+START 03-10-2026 22:01:06.96 
 C:\Program Files\dotnet\dotnet.exe
 9.0.301 [C:\Program Files\dotnet\sdk]
 === RESTORE === 
   Determining projects to restore...
-  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Video\Epsilon.Video.csproj (in 177 ms).
-  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Core\Epsilon.Core.csproj (in 1.4 sec).
-  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Simulator\Epsilon.Simulator.csproj (in 1.4 sec).
-  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\tests\Epsilon.Core.Tests\Epsilon.Core.Tests.csproj (in 1.41 sec).
-  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\EpsilonGCS\EpsilonGCS.csproj (in 1.41 sec).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Video\Epsilon.Video.csproj (in 151 ms).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Simulator\Epsilon.Simulator.csproj (in 222 ms).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Core\Epsilon.Core.csproj (in 222 ms).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\tests\Epsilon.Core.Tests\Epsilon.Core.Tests.csproj (in 223 ms).
+  Restored C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\EpsilonGCS\EpsilonGCS.csproj (in 228 ms).
 RESTORE_EXIT=0 
 === BUILD === 
   Epsilon.Video -> C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\src\Epsilon.Video\bin\Release\net8.0\Epsilon.Video.dll
@@ -19,77 +19,131 @@ RESTORE_EXIT=0
 Workload updates are available. Run `dotnet workload list` for more information.
 BUILD_EXIT=0 
 === TEST === 
-Build started 03-10-2026 18:07:20.
+Build started 03-10-2026 22:01:14.
 Test run for C:\Users\mspac\Downloads\EpsilonGCS\EpsilonGCS\tests\Epsilon.Core.Tests\bin\Release\net8.0\Epsilon.Core.Tests.dll (.NETCoreApp,Version=v8.0)
 A total of 1 test files matched the specified pattern.
 [xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.21)
-[xUnit.net 00:00:00.70]   Discovering: Epsilon.Core.Tests
-[xUnit.net 00:00:00.76]   Discovered:  Epsilon.Core.Tests
-[xUnit.net 00:00:00.76]   Starting:    Epsilon.Core.Tests
-  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_NoPositionOrHeight_ReturnsNull [235 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.SetControlMode_HasEightBytes [235 ms]
-  Passed Epsilon.Core.Tests.SpecConformanceTests.GlobalStatus_UncertaintyScaleDependsOnCalibrationFlag [235 ms]
-  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_DefaultsPortAndAcceptsMissingScheme [240 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.GeoPoint_ComesFromGeoLatitudeLongitudeOfTheLatestStatus [240 ms]
+[xUnit.net 00:00:00.17]   Discovering: Epsilon.Core.Tests
+[xUnit.net 00:00:00.22]   Discovered:  Epsilon.Core.Tests
+[xUnit.net 00:00:00.22]   Starting:    Epsilon.Core.Tests
+  Passed Epsilon.Core.Tests.FireCorrectionTests.CameraLookingEast_MpiNorthAndShort_GivesLeftAndAdd [74 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_NoPositionOrHeight_ReturnsNull [72 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.GlobalStatus_UncertaintyScaleDependsOnCalibrationFlag [72 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.SetControlMode_HasEightBytes [72 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.TargetEast_SplashShortAndNorth_IsShortAndLeft [73 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_DefaultsPortAndAcceptsMissingScheme [75 ms]
   Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_RejectsOtherSchemesAndBadPaths [< 1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.XyzProvider_FillsTemplateDeterministically [74 ms]
+  Passed Epsilon.Core.Tests.FireCorrectionTests.NoSplashes_IsRejected [< 1 ms]
+  Passed Epsilon.Core.Tests.FireCorrectionTests.Xy_TargetOnTheBearingLine_HasZeroAcrossAndFullRangeAlong [< 1 ms]
   Passed Epsilon.Core.Tests.CorrectionsTests.Parser_LongRandomStream_FindsAllPackets [1 ms]
-  Passed Epsilon.Core.Tests.TsInspectorTests.HandlesRtpHeader [243 ms]
+  Passed Epsilon.Core.Tests.FireCorrectionTests.CameraLookingNorth_MpiEastAndBeyond_GivesLeftAndDrop [< 1 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.GeoPoint_ComesFromGeoLatitudeLongitudeOfTheLatestStatus [77 ms]
+  Passed Epsilon.Core.Tests.FireCorrectionTests.Mpi_IsTheMeanOfTheSplashes [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_AboveHorizon_IsClippedAtMaxRange [< 1 ms]
+  Passed Epsilon.Core.Tests.FireCorrectionTests.Correction_UsesTheMpiOfAllSplashes [< 1 ms]
+  Passed Epsilon.Core.Tests.FireCorrectionTests.Units_AreConverted [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_LookingNorthAt45Degrees [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.Parser_ReassemblesSplitAndConcatenatedPackets [2 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.ZeroLengthPackets_MatchDocumentExamples [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.RateControl_EncodesSignedLittleEndian [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.VideoStabilizationOn_MatchesDocumentExample [< 1 ms]
+  Passed Epsilon.Core.Tests.TsInspectorTests.HandlesRtpHeader [79 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.FrameLayout_HeaderAndDataChecksumsAndTerminator [3 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.Changed_IsRaisedOnEveryModification [2 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.StowAndPilotView_AreDegreesTimesTen [< 1 ms]
   Passed Epsilon.Core.Tests.TsInspectorTests.CountsKlvPackets_WithKlvaRegistration [< 1 ms]
   Passed Epsilon.Core.Tests.TsInspectorTests.CountsKlvPackets_MetadataStreamType [< 1 ms]
-  Passed Epsilon.Core.Tests.SpecConformanceTests.FrameLayout_HeaderAndDataChecksumsAndTerminator [4 ms]
-  Passed Epsilon.Core.Tests.TsInspectorTests.IgnoresPrivateDataWithoutKlva [< 1 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.Changed_IsRaisedOnEveryModification [3 ms]
-  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_AboveHorizon_IsClippedAtMaxRange [2 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.Parser_ReassemblesSplitAndConcatenatedPackets [4 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.Ids_AreNotReusedAfterDelete [< 1 ms]
-  Passed Epsilon.Core.Tests.SpecConformanceTests.StowAndPilotView_AreDegreesTimesTen [< 1 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.ZeroLengthPackets_MatchDocumentExamples [< 1 ms]
-  Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_LookingNorthAt45Degrees [< 1 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.RateControl_EncodesSignedLittleEndian [< 1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.LrfSettings_ModeBits [< 1 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.VideoStabilizationOn_MatchesDocumentExample [< 1 ms]
+  Passed Epsilon.Core.Tests.TsInspectorTests.IgnoresPrivateDataWithoutKlva [< 1 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.Ids_AreNotReusedAfterDelete [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.Parser_RejectsCorruptChecksum [< 1 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.Parser_RecoversAcrossSplitReadsAfterCorruption [2 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.NetworkSettings_FieldOffsets [< 1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.EoSettings_IcrIsBit3OfCamMode [< 1 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.CrcTable_MatchesDocumentTableStart [< 1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.MessageIds_MatchSection41Table [< 1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.GeoParameters_FieldOffsets [< 1 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.Parser_RejectsCorruptChecksum [1 ms]
-  Passed Epsilon.Core.Tests.CorrectionsTests.Parser_RecoversAcrossSplitReadsAfterCorruption [2 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.Parser_ZeroLengthAckAndBackToBackHeaderBytes [< 1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.ByteOrder_MatchesSection31Example [< 1 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.CrcTable_MatchesDocumentTableStart [< 1 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.InvalidPositions_AreRejected [4 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.UnitStore_AddFindRemove_AndLastCalculation [5 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.MissingOrDegenerateInput_IsRejected [< 1 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.ToLocal_UsesTheDocumentedFormula [< 1 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.InvalidPositions_AreRejected [2 ms]
   Passed Epsilon.Core.Tests.CorrectionsTests.Parser_RecoversPacketHiddenBehindTruncatedPacket [2 ms]
-  Passed Epsilon.Core.Tests.ProtocolTests.GlobalStatus_ParsesFields [4 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.Targets_GetUniqueIncrementingIdsAndDefaultNames [4 ms]
-  Passed Epsilon.Core.Tests.CorrectionsTests.TiltDirection_CanBeSwitchedBack [4 ms]
+  Passed Epsilon.Core.Tests.ProtocolTests.GlobalStatus_ParsesFields [2 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.Targets_GetUniqueIncrementingIdsAndDefaultNames [3 ms]
+  Passed Epsilon.Core.Tests.CorrectionsTests.TiltDirection_CanBeSwitchedBack [3 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.TargetNorth_SplashBeyondAndRight_IsPositivePositive [3 ms]
   Passed Epsilon.Core.Tests.CorrectionsTests.TiltUp_SendsNegativeTiltSpeed_ByDefault [< 1 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.SplashOnTarget_GivesZeroDeviation_AndBearingIsNormalised [< 1 ms]
   Passed Epsilon.Core.Tests.CorrectionsTests.Footprint_LookingEast_RotatesWithAzimuth [< 1 ms]
-  Passed Epsilon.Core.Tests.SpecConformanceTests.Version_ParsesAllOffsets [10 ms]
+  Passed Epsilon.Core.Tests.UnitFireCalculatorTests.SplashPerpendicularLeft_HasNoAddDrop [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.PairPastedIntoLatitude(pair: "13.454576N, 80.226849E") [88 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.PairPastedIntoLatitude(pair: "13.454576; 80.226849") [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.PairPastedIntoLatitude(pair: "13.454576 80.226849") [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.PairPastedIntoLatitude(pair: "13.454576, 80.226849") [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13.454576 S", lon: "W 80.226849", expLat: -13.454575999999999, expLon: -80.226849000000001) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13.454576", lon: "80.226849", expLat: 13.454575999999999, expLon: 80.226849000000001) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13.454576N", lon: "80.226849 E", expLat: 13.454575999999999, expLon: 80.226849000000001) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13 27.2746 N", lon: "80 13.6110 E", expLat: 13.454577, expLon: 80.226849999999999) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13°27'16.47\"N", lon: "80°13'36.66\"E", expLat: 13.454575, expLon: 80.226849999999999) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13 27 16.47 N", lon: "80 13 36.66 E", expLat: 13.454575, expLon: 80.226849999999999) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "13,454576", lon: "80,226849", expLat: 13.454575999999999, expLon: 80.226849000000001) [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.AcceptedFormats(lat: "-13.454576", lon: "-80.226849", expLat: -13.454575999999999, expLon: -80.226849000000001) [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.Version_ParsesAllOffsets [9 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.ZeroLengthCommands_HaveNoDataAndNoDataChecksum [< 1 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.UpdateTarget_ChangesTheModelNotACopy [5 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.Splashes_StorePositionTimeAndSelectedTarget [1 ms]
-  Passed Epsilon.Core.Tests.SpecConformanceTests.MwirParameters_BrightnessContrastAtBytes7And8 [2 ms]
-[xUnit.net 00:00:01.11]   Finished:    Epsilon.Core.Tests
+  Passed Epsilon.Core.Tests.TargetsTests.UpdateTarget_ChangesTheModelNotACopy [6 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.MwirParameters_BrightnessContrastAtBytes7And8 [1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.EthernetDisplay_ModeAndPadBit [< 1 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.Splashes_StorePositionTimeAndSelectedTarget [< 1 ms]
   Passed Epsilon.Core.Tests.SpecConformanceTests.ErrorReport_ParsesAllOffsets [< 1 ms]
-  Passed Epsilon.Core.Tests.TargetsTests.GeoPoint_IsRefusedWhenGeoInactiveOrZero [2 ms]
-  Passed Epsilon.Core.Tests.SpecConformanceTests.PayloadLengths_MatchDocumentTables [2 ms]
-  Passed Epsilon.Core.Tests.RestreamUrlTests.AutomaticAddress_IsNotLinkLocalWhenAnotherAddressExists [33 ms]
+  Passed Epsilon.Core.Tests.TargetsTests.GeoPoint_IsRefusedWhenGeoInactiveOrZero [< 1 ms]
+  Passed Epsilon.Core.Tests.SpecConformanceTests.PayloadLengths_MatchDocumentTables [1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.UnitStore_UpdateUnit_ChangesTheModel [5 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.ManualTarget_IsStoredWithManualSource [< 1 ms]
+  Passed Epsilon.Core.Tests.ManualCoordinateTests.Rejected_WithAReason [< 1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Cache_StoresPerProviderWithoutCollisions [22 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.TileMath_TmsConversionIsItsOwnInverse [< 1 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.AutomaticAddress_IsNotLinkLocalWhenAnotherAddressExists [26 ms]
   Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_HostNameIsAccepted [< 1 ms]
   Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_UsesPortAndPath [< 1 ms]
-  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_RejectsAddressOfAnotherComputer [18 ms]
+  Passed Epsilon.Core.Tests.RestreamUrlTests.CustomUrl_RejectsAddressOfAnotherComputer [14 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Cache_ExpiryByAgeAndByHeader [29 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Cache_RejectsAndRemovesCorruptTiles [10 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.TileMath_CountsAreaTiles [8 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.TileMath_MatchesStandardXyz [2 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.CustomMaps_ImportExportAndUniqueIds [99 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Cache_StatsAndClear [17 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Offline_NeverTouchesTheNetwork [6 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Retries_AreLimitedAnd404IsNotRetried [1 s]
+  Passed Epsilon.Core.Tests.MapCacheTests.LocalProvider_ReadsFilesAndNeverDownloads [5 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.AreaDownload_CountsDownloadedCachedAndFailed [429 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Online_DownloadsOnceThenServesFromCache [4 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.NonImageResponse_IsNotCached [1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Cache_MigratesTilesOfEarlierVersions [6 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.AreaDownload_RefusesProvidersThatForbidIt [1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.TileMath_ClampsToTheWebMercatorWorld [< 1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Google_WithoutKey_GivesAReadableMissingTile [7 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.Manager_SelectsAndFallsBack [1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.HeaderRespectingProviders_CacheOnlyWithMaxAge [1 ms]
+[xUnit.net 00:00:02.25]   Finished:    Epsilon.Core.Tests
+  Passed Epsilon.Core.Tests.MapCacheTests.AreaDownload_CanBeCancelledAndKeepsTiles [25 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.StaleCopy_IsUsedWhenTheServerIsDown [4 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.CustomDefinition_Validates [< 1 ms]
+  Passed Epsilon.Core.Tests.MapCacheTests.XyzProvider_RecognisesLocalFolders [< 1 ms]
 
 Test Run Successful.
-Total tests: 51
-     Passed: 51
- Total time: 3.5439 Seconds
+Total tests: 105
+     Passed: 105
+ Total time: 3.4632 Seconds
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:04.86
+Time Elapsed 00:00:04.10
 
 Workload updates are available. Run `dotnet workload list` for more information.
 TEST_EXIT=0 
-DONE 03-10-2026 18:07:25.56 
+DONE 03-10-2026 22:01:18.56 
